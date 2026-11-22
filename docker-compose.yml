@@ -6,7 +6,13 @@ services:
     environment:
       # The password for the /post-office page. Change this!
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
-    ports:
+      # Turns on /superadmin (at least 12 characters, different from ADMIN_PASSWORD).
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+      # Filled in by Coolify with the public address; used as ORIGIN (see server.js).
+      SERVICE_URL_APP: ${SERVICE_URL_APP:-}
+      SERVICE_FQDN_APP: ${SERVICE_FQDN_APP:-}
+    # Only reachable through Coolify's proxy, never straight from the internet.
+    expose:
       - '3000'
     volumes:
       - tennis-data:/data

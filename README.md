@@ -27,6 +27,20 @@ is needed to cancel. The post office has its own page with full control.
 - Find upcoming bookings by name or phone number
 - Activity log of every booking, cancellation and change
 
+**Superadmin** (`/superadmin`, its own password, not linked from anywhere)
+
+- Upcoming public bookings grouped by the internet address they were made from
+- Delete every upcoming booking from one address, to clear out spam
+- Addresses are forgotten 30 days after the booking
+
+**Security**
+
+- Wrong passwords: 5 per address and 50 in total every 15 minutes, then logins pause
+- Wrong phone numbers when cancelling: 10 per address every 15 minutes, 20 per booking a day
+- Logins are stored on the server and end on log out (post office after 30 days, superadmin after 8 hours)
+- Public bookings need a full phone number (at least 10 digits)
+- Not indexed by search engines (`robots.txt`, `X-Robots-Tag` and a `noindex` meta tag)
+
 ## Running locally
 
 ```sh
@@ -45,15 +59,29 @@ Data is stored in `./data/tennis.db` (SQLite).
    Without it, bookings are lost on every redeploy.
 4. The app listens on port **3000**. Health check: `GET /health`.
 
-If saving a booking fails with “Cross-site POST form submissions are forbidden”, set
-`ORIGIN` to your public address, e.g. `ORIGIN=https://tennis.example.org`.
+The app needs to know its public address. On Coolify this is automatic: it uses
+`SERVICE_URL_APP` (or `SERVICE_FQDN_APP`), which Coolify fills in from the domain you give the
+app. Anywhere else, set `ORIGIN`, e.g. `ORIGIN=https://tennis.example.org`. Without it the
+address is worked out from proxy headers, saving can fail with “Cross-site POST form
+submissions are forbidden”, and login cookies may not be marked secure.
 
-| Variable         | Default              |                                                        |
-| ---------------- | -------------------- | ------------------------------------------------------ |
-| `ADMIN_PASSWORD` | `postoffice`         | Post office password. Changing it logs everyone out.   |
-| `DATABASE_PATH`  | `/data/tennis.db`    | SQLite file location                                   |
-| `ORIGIN`         | (from proxy headers) | Public URL, if the proxy headers aren't passed through |
-| `PORT`           | `3000`               |                                                        |
+### Behind Cloudflare
+
+- Visitor addresses come from Cloudflare's `CF-Connecting-IP` header. Cloudflare overwrites
+  it, but anyone who reaches the server directly can fake it. So only let Cloudflare reach the
+  server: firewall ports 80/443 to [Cloudflare's IP ranges](https://www.cloudflare.com/ips/),
+  or use a Cloudflare Tunnel.
+- Use SSL mode **Full (strict)**, and turn off **Rocket Loader**: it rewrites scripts, and the
+  Content-Security-Policy blocks that.
+
+| Variable              | Default                                                 |                                                                         |
+| --------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `ADMIN_PASSWORD`      | `postoffice`                                            | Post office password. Changing it logs everyone out.                    |
+| `SUPERADMIN_PASSWORD` | (off)                                                   | Turns on `/superadmin`. 12+ characters, different from `ADMIN_PASSWORD` |
+| `CLIENT_IP_HEADER`    | `cf-connecting-ip` (Docker)                             | Header with the visitor's address. Empty = the connection's address     |
+| `DATABASE_PATH`       | `/data/tennis.db`                                       | SQLite file location                                                    |
+| `ORIGIN`              | `SERVICE_URL_APP`, else `https://` + `SERVICE_FQDN_APP` | Public URL. Set it by hand to override Coolify's                        |
+| `PORT`                | `3000`                                                  |                                                                         |
 
 **Backups:** copy `/data/tennis.db` (plus `tennis.db-wal` if present), or use Coolify's volume backups.
 

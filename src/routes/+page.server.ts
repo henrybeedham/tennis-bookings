@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import {
 	BookingError,
+	WrongPhoneError,
 	cancelSlot,
 	createBooking,
 	getPublicSlots,
@@ -9,6 +10,13 @@ import {
 	toPublic
 } from '#lib/server/bookings.js';
 import { readBookingForm, rangeFromUrl } from '#lib/server/forms.js';
+import { clientIp } from '#lib/server/ip.js';
+import { limiter } from '#lib/server/ratelimit.js';
+
+// Wrong phone numbers when cancelling: 10 per address every 15 minutes, and 20 per
+// booking a day, so nobody can work through numbers to cancel someone else's booking.
+const wrongPhoneByIp = limiter(10, 15 * 60 * 1000);
+const wrongPhoneByBooking = limiter(20, 24 * 60 * 60 * 1000);
 
 export const load: PageServerLoad = ({ url, depends, locals, cookies }) => {
 	depends('app:slots');
@@ -29,10 +37,10 @@ export const load: PageServerLoad = ({ url, depends, locals, cookies }) => {
 };
 
 export const actions: Actions = {
-	book: async ({ request }) => {
-		const data = await request.formData();
+	book: async (event) => {
+		const data = await event.request.formData();
 		try {
-			const slot = createBooking(readBookingForm(data), false);
+			const slot = createBooking(readBookingForm(data), false, clientIp(event));
 			return { booked: toPublic(slot) };
 		} catch (e) {
 			if (e instanceof BookingError) return fail(400, { error: e.message });
@@ -40,12 +48,23 @@ export const actions: Actions = {
 		}
 	},
 
-	cancel: async ({ request }) => {
-		const data = await request.formData();
+	cancel: async (event) => {
+		const data = await event.request.formData();
+		const id = String(data.get('id'));
+		const ip = clientIp(event);
+		if (wrongPhoneByIp.blocked(ip) || wrongPhoneByBooking.blocked(id)) {
+			return fail(429, {
+				error: 'Too many wrong phone numbers. Please try again later, or ask the post office.'
+			});
+		}
 		try {
-			const slot = cancelSlot(String(data.get('id')), { admin: false, phone: data.get('phone') });
+			const slot = cancelSlot(id, { admin: false, phone: data.get('phone') });
 			return { cancelled: toPublic(slot) };
 		} catch (e) {
+			if (e instanceof WrongPhoneError) {
+				wrongPhoneByIp.hit(ip);
+				wrongPhoneByBooking.hit(id);
+			}
 			if (e instanceof BookingError) return fail(400, { error: e.message });
 			throw e;
 		}

@@ -12,7 +12,8 @@ import {
 	recentLog,
 	saveSettings
 } from '#lib/server/bookings.js';
-import { checkPassword, logIn, logOut } from '#lib/server/auth.js';
+import { LOCKED_MESSAGE, logIn, logOut } from '#lib/server/auth.js';
+import { clientIp } from '#lib/server/ip.js';
 import { readBookingForm, rangeFromUrl } from '#lib/server/forms.js';
 import { addDays, isValidDate, parseTime } from '#lib/dates.js';
 
@@ -53,23 +54,23 @@ function guarded<T>(fn: (data: FormData) => T) {
 	};
 }
 
-let lastFailure = 0;
-
 export const actions: Actions = {
-	login: async ({ request, cookies, url }) => {
-		const data = await request.formData();
-		// Slow down password guessing a little.
-		if (Date.now() - lastFailure < 1500) await new Promise((r) => setTimeout(r, 1500));
-		if (!checkPassword(data.get('password'))) {
-			lastFailure = Date.now();
-			return fail(400, { error: 'That password isn’t right.' });
-		}
-		logIn(cookies, url.protocol === 'https:');
+	login: async (event) => {
+		const data = await event.request.formData();
+		const result = logIn(
+			'admin',
+			data.get('password'),
+			clientIp(event),
+			event.cookies,
+			event.url.protocol === 'https:'
+		);
+		if (result === 'locked') return fail(429, { error: LOCKED_MESSAGE });
+		if (result === 'wrong') return fail(400, { error: 'That password isn’t right.' });
 		redirect(303, '/post-office');
 	},
 
 	logout: async ({ cookies }) => {
-		logOut(cookies);
+		logOut(cookies, 'admin');
 		redirect(303, '/post-office');
 	},
 

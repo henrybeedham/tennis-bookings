@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS bookings (
 	note TEXT,
 	kind TEXT NOT NULL DEFAULT 'booking',
 	created_by TEXT NOT NULL DEFAULT 'public',
-	created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	created_at TEXT NOT NULL DEFAULT (datetime('now')),
+	ip TEXT
 );
 CREATE INDEX IF NOT EXISTS bookings_date ON bookings(date);
 
@@ -57,4 +58,23 @@ CREATE TABLE IF NOT EXISTS log (
 	action TEXT NOT NULL,
 	detail TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS sessions (
+	token_hash TEXT PRIMARY KEY,
+	role TEXT NOT NULL,
+	expires_at INTEGER NOT NULL
+);
+
+-- A slow hash of each password, so a changed password can log out old sessions.
+CREATE TABLE IF NOT EXISTS auth_passwords (
+	role TEXT PRIMARY KEY,
+	salt TEXT NOT NULL,
+	hash TEXT NOT NULL
+);
 `);
+
+// Databases made before bookings remembered the address they were made from.
+const bookingColumns = db.query('PRAGMA table_info(bookings)').all() as { name: string }[];
+if (!bookingColumns.some((c) => c.name === 'ip'))
+	db.exec('ALTER TABLE bookings ADD COLUMN ip TEXT;');
+db.exec('CREATE INDEX IF NOT EXISTS bookings_ip ON bookings(ip);');

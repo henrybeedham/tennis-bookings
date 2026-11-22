@@ -14,9 +14,18 @@ import type { AdminSlot, LogEntry, Series, Settings, Slot, SlotKind } from '../t
 /** A problem we can show to the person as-is. */
 export class BookingError extends Error {}
 
+/** Someone gave the wrong phone number when cancelling. Counted to stop guessing. */
+export class WrongPhoneError extends BookingError {}
+
 const MAX_PUBLIC_LENGTH = 6 * 60; // minutes
 const MAX_DAYS_AHEAD = 366;
+const MAX_ADMIN_DAYS_AHEAD = 365 * 3;
+/** How long a regular booking runs for when it has no end date, and the longest it can be given. */
 const SERIES_HORIZON_DAYS = 365 * 2;
+/** Full UK numbers have 10 or 11 digits, which makes them hard to guess. */
+const MIN_PUBLIC_PHONE_DIGITS = 10;
+/** Addresses are kept only to spot and clear out spam, so they're forgotten after this. */
+const KEEP_IP_DAYS = 30;
 
 // ---------------------------------------------------------------- settings
 
@@ -273,6 +282,9 @@ function validate(input: BookingInput, admin: boolean): Validated {
 	if (!admin && !phone) {
 		throw new BookingError('Please enter your phone number. You’ll need it if you want to cancel.');
 	}
+	if (!admin && phone && phone.length < MIN_PUBLIC_PHONE_DIGITS) {
+		throw new BookingError('Please enter your full phone number, including the area code.');
+	}
 	if (admin && cleanText(input.phone, 40) && !phone) {
 		throw new BookingError('That phone number doesn’t look right.');
 	}
@@ -290,13 +302,21 @@ function validate(input: BookingInput, admin: boolean): Validated {
 				'You can book up to 6 hours at a time. For longer, please ask the post office.'
 			);
 		}
+	} else if (date > addDays(now.date, MAX_ADMIN_DAYS_AHEAD)) {
+		throw new BookingError('Bookings can be made up to 3 years ahead.');
 	}
 
 	return { date, start, end, name, phone, note: cleanText(input.note, 200) || null, kind };
 }
 
-export function createBooking(input: BookingInput, admin: boolean): AdminSlot {
+/** `ip` is the address a public booking came from, so spam can be cleared out by address. */
+export function createBooking(
+	input: BookingInput,
+	admin: boolean,
+	ip: string | null = null
+): AdminSlot {
 	const v = validate(input, admin);
+	if (ip) forgetOldIps();
 
 	return db.transaction(() => {
 		const clash = findClash(v.date, v.start, v.end);
@@ -309,10 +329,20 @@ export function createBooking(input: BookingInput, admin: boolean): AdminSlot {
 		}
 		const row = db
 			.query(
-				`INSERT INTO bookings (date, start, end, name, phone, note, kind, created_by)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+				`INSERT INTO bookings (date, start, end, name, phone, note, kind, created_by, ip)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
 			)
-			.get(v.date, v.start, v.end, v.name, v.phone, v.note, v.kind, admin ? 'admin' : 'public') as {
+			.get(
+				v.date,
+				v.start,
+				v.end,
+				v.name,
+				v.phone,
+				v.note,
+				v.kind,
+				admin ? 'admin' : 'public',
+				admin ? null : ip
+			) as {
 			id: number;
 		};
 
@@ -337,6 +367,10 @@ export function createSeries(input: SeriesInput): { skipped: ISODate[] } {
 		if (!isValidDate(input.until)) throw new BookingError('The “until” date isn’t valid.');
 		if (input.until < v.date)
 			throw new BookingError('The “until” date must be after the first week.');
+		if (input.until > addDays(v.date, SERIES_HORIZON_DAYS))
+			throw new BookingError(
+				'A regular booking can run for up to 2 years. Add it again after that.'
+			);
 		until = input.until;
 	}
 
@@ -420,7 +454,9 @@ export function cancelSlot(id: string, opts: { admin: boolean; phone?: unknown }
 		}
 		const phone = normalisePhone(opts.phone);
 		if (!phone || phone !== slot.phone) {
-			throw new BookingError('That phone number doesn’t match the one used to make this booking.');
+			throw new WrongPhoneError(
+				'That phone number doesn’t match the one used to make this booking.'
+			);
 		}
 	}
 
@@ -441,4 +477,83 @@ export function cancelSlot(id: string, opts: { admin: boolean; phone?: unknown }
 		`${describe(slot)}${opts.admin ? ' (post office)' : ''}`
 	);
 	return slot;
+}
+
+// ---------------------------------------------------------------- superadmin
+
+/** Clears the address from bookings that finished a while ago. */
+export function forgetOldIps() {
+	db.query('UPDATE bookings SET ip = NULL WHERE ip IS NOT NULL AND date < ?').run(
+		addDays(nowUK().date, -KEEP_IP_DAYS)
+	);
+}
+
+export interface IpBooking {
+	id: number;
+	date: ISODate;
+	start: number;
+	end: number;
+	name: string;
+	createdAt: string;
+}
+
+export interface IpGroup {
+	ip: string;
+	bookings: IpBooking[];
+	names: string[];
+	firstMade: string;
+	lastMade: string;
+}
+
+const UPCOMING = '(date > ? OR (date = ? AND end > ?))';
+
+/** Upcoming public bookings grouped by the address they came from, most first. */
+export function bookingsByIp(): IpGroup[] {
+	forgetOldIps();
+	const now = nowUK();
+	const rows = db
+		.query(
+			`SELECT id, date, start, end, name, created_at, ip FROM bookings
+			 WHERE ip IS NOT NULL AND ${UPCOMING} ORDER BY date, start`
+		)
+		.all(now.date, now.date, now.minutes) as (Pick<
+		BookingRow,
+		'id' | 'date' | 'start' | 'end' | 'name' | 'created_at'
+	> & { ip: string })[];
+
+	const groups = new Map<string, IpGroup>();
+	for (const r of rows) {
+		let g = groups.get(r.ip);
+		if (!g) {
+			g = { ip: r.ip, bookings: [], names: [], firstMade: r.created_at, lastMade: r.created_at };
+			groups.set(r.ip, g);
+		}
+		g.bookings.push({
+			id: r.id,
+			date: r.date,
+			start: r.start,
+			end: r.end,
+			name: r.name,
+			createdAt: r.created_at
+		});
+		if (!g.names.includes(r.name)) g.names.push(r.name);
+		if (r.created_at < g.firstMade) g.firstMade = r.created_at;
+		if (r.created_at > g.lastMade) g.lastMade = r.created_at;
+	}
+	return [...groups.values()].sort((a, b) => b.bookings.length - a.bookings.length);
+}
+
+/** Cancels every upcoming booking made from one address. Past ones are left as they were. */
+export function deleteUpcomingByIp(ip: string): number {
+	const now = nowUK();
+	const { changes } = db
+		.query(`DELETE FROM bookings WHERE ip = ? AND ${UPCOMING}`)
+		.run(ip, now.date, now.date, now.minutes);
+	if (changes) {
+		log(
+			'Bookings removed',
+			`${changes} upcoming booking${changes === 1 ? '' : 's'} made from one internet address (superadmin)`
+		);
+	}
+	return changes;
 }
