@@ -10,7 +10,7 @@
 				default:
 					'bg-ink text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.18),0_6px_16px_-6px_oklch(0.27_0.045_250/0.6)] hover:bg-[oklch(0.33_0.055_250)]',
 				outline:
-					'border-white bg-white/70 text-ink shadow-[0_1px_2px_oklch(0.4_0.05_245/0.08),inset_0_0_0_1px_oklch(0.86_0.025_235)] backdrop-blur hover:bg-white aria-expanded:bg-white',
+					'border-white/90 bg-white/75 text-ink shadow-[0_1px_2px_oklch(0.4_0.05_245/0.06),0_6px_16px_-10px_oklch(0.4_0.08_245/0.35)] backdrop-blur hover:bg-white aria-expanded:bg-white',
 				secondary: 'bg-ice-200/80 text-ink hover:bg-ice-300/70',
 				ghost: 'text-ink hover:bg-white/70 aria-expanded:bg-white/70',
 				destructive:

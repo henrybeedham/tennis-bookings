@@ -57,7 +57,7 @@ export function saveSettings(s: Settings) {
 	})();
 	log(
 		'Settings changed',
-		`Hours ${formatRange(s.open, s.close)}${s.notice ? ` · Notice: “${s.notice}”` : ''}`
+		`${s.open === 0 && s.close === 24 * 60 ? 'Open all the time' : `Hours ${formatRange(s.open, s.close)}`}${s.notice ? ` · Notice: “${s.notice}”` : ''}`
 	);
 }
 

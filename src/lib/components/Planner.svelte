@@ -109,7 +109,7 @@
 		<div class="flex items-center gap-2 max-md:w-full">
 			<Button
 				variant="outline"
-				size="icon"
+				size="icon-lg"
 				onclick={() => go(addDays(current, -step))}
 				aria-label={oneDay ? 'Previous day' : 'Previous week'}
 			>
@@ -117,7 +117,8 @@
 			</Button>
 			<Button
 				variant="outline"
-				class="max-md:flex-1"
+				size="lg"
+				class="px-5 max-md:flex-1"
 				onclick={() => go(liveToday)}
 				disabled={showingToday}
 			>
@@ -125,7 +126,7 @@
 			</Button>
 			<Button
 				variant="outline"
-				size="icon"
+				size="icon-lg"
 				onclick={() => go(addDays(current, step))}
 				aria-label={oneDay ? 'Next day' : 'Next week'}
 			>
@@ -144,12 +145,16 @@
 		</h2>
 
 		<div class="flex items-center gap-3 max-md:w-full">
-			<div class="flex rounded-xl bg-ice-200/70 p-1 max-md:hidden" role="group" aria-label="Show">
+			<div
+				class="flex h-14 rounded-2xl bg-ice-200/70 p-1 max-md:hidden"
+				role="group"
+				aria-label="Show"
+			>
 				{#each ['day', 'week'] as const as v (v)}
 					<button
 						type="button"
 						class={[
-							'h-10 rounded-lg px-4 font-bold transition-all',
+							'h-12 rounded-xl px-5 text-lg font-bold transition-all',
 							view === v ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
 						]}
 						aria-pressed={view === v}

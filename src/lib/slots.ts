@@ -1,7 +1,10 @@
 import type { ISODate } from './dates';
 import type { Slot } from './types';
 
-/** The first free half hour on a day (after now, if it's today). Falls back to opening time. */
+/**
+ * The first free half hour on a day: after now if it's today, otherwise from 9am
+ * (or opening time, if later). Falls back to opening time.
+ */
 export function firstFreeStart(
 	slots: Slot[],
 	day: ISODate,
@@ -10,7 +13,8 @@ export function firstFreeStart(
 	open: number,
 	close: number
 ): number {
-	const from = day === today ? Math.max(open, Math.floor(nowMinutes / 30) * 30) : open;
+	const from =
+		day === today ? Math.max(open, Math.floor(nowMinutes / 30) * 30) : Math.max(open, 9 * 60);
 	const taken = slots.filter((s) => s.date === day);
 	for (let m = from; m + 30 <= close; m += 30) {
 		if (!taken.some((s) => s.start < m + 30 && s.end > m)) return m;

@@ -37,14 +37,6 @@ class Device {
 		write(ME_KEY, { name, phone });
 	}
 
-	forget() {
-		this.name = '';
-		this.phone = '';
-		try {
-			localStorage.removeItem(ME_KEY);
-		} catch {}
-	}
-
 	addMine(id: string) {
 		this.mine = new Set([...this.mine, id].slice(-200));
 		write(MINE_KEY, [...this.mine]);

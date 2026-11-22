@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 	import CalendarPlus from '@lucide/svelte/icons/calendar-plus';
@@ -19,6 +20,7 @@
 	import Notice from '#lib/components/Notice.svelte';
 	import Planner from '#lib/components/Planner.svelte';
 	import TimeSelect from '#lib/components/TimeSelect.svelte';
+	import Segmented from '#lib/components/admin/Segmented.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import AdminBookingDialog from '#lib/components/admin/AdminBookingDialog.svelte';
 	import AdminSlotDialog from '#lib/components/admin/AdminSlotDialog.svelte';
@@ -86,16 +88,23 @@
 		);
 	});
 
-	const hourOptions = Array.from({ length: 48 }, (_, i) => ({ value: i * 30 })).filter(
-		(o) => o.value >= 5 * 60 && o.value <= 23 * 60 + 30
-	);
+	const ALL_DAY = { open: 0, close: 24 * 60 };
+	const openOptions = Array.from({ length: 48 }, (_, i) => ({ value: i * 30 }));
+	const closeOptions = Array.from({ length: 48 }, (_, i) => ({ value: (i + 1) * 30 }));
+	let hours = $state<'set' | 'always'>('set');
 	let openTime = $state(0);
 	let closeTime = $state(0);
+	// Load the saved hours into the form. Only re-runs when the saved settings change,
+	// so clicking the options doesn't get undone.
 	$effect(() => {
-		if (data.admin) {
-			openTime = data.settings.open;
-			closeTime = data.settings.close;
-		}
+		if (!data.admin) return;
+		const { open, close } = data.settings;
+		const always = open === ALL_DAY.open && close === ALL_DAY.close;
+		untrack(() => {
+			hours = always ? 'always' : 'set';
+			openTime = always ? 8 * 60 : open;
+			closeTime = always ? 21 * 60 : close;
+		});
 	});
 
 	function when(at: string) {
@@ -371,15 +380,39 @@
 						<p class="text-ink-soft">Shown at the bottom of the page and after someone books.</p>
 					</div>
 
-					<div class="grid grid-cols-2 gap-3">
-						<div class="flex flex-col gap-2">
-							<Label for="s-open">Court opens</Label>
-							<TimeSelect id="s-open" name="open" bind:value={openTime} options={hourOptions} />
-						</div>
-						<div class="flex flex-col gap-2">
-							<Label for="s-close">Court closes</Label>
-							<TimeSelect id="s-close" name="close" bind:value={closeTime} options={hourOptions} />
-						</div>
+					<div class="flex flex-col gap-3">
+						<Segmented
+							label="Opening hours"
+							bind:value={hours}
+							options={[
+								{ value: 'set', label: 'Set hours' },
+								{ value: 'always', label: 'Open all the time' }
+							]}
+						/>
+						{#if hours === 'always'}
+							<input type="hidden" name="open" value={formatTime(ALL_DAY.open)} />
+							<input type="hidden" name="close" value={formatTime(ALL_DAY.close)} />
+							<p class="text-ink-soft">
+								The court can be booked at any time of day or night. The calendar opens at 7am and
+								people can scroll up or down.
+							</p>
+						{:else}
+							<div class="grid grid-cols-2 gap-3">
+								<div class="flex flex-col gap-2">
+									<Label for="s-open">Court opens</Label>
+									<TimeSelect id="s-open" name="open" bind:value={openTime} options={openOptions} />
+								</div>
+								<div class="flex flex-col gap-2">
+									<Label for="s-close">Court closes</Label>
+									<TimeSelect
+										id="s-close"
+										name="close"
+										bind:value={closeTime}
+										options={closeOptions}
+									/>
+								</div>
+							</div>
+						{/if}
 					</div>
 
 					<div class="flex flex-col gap-2">

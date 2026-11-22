@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Repeat from '@lucide/svelte/icons/repeat-2';
 	import Lock from '@lucide/svelte/icons/lock';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -51,6 +52,22 @@
 	const hours = $derived(
 		Array.from({ length: (rangeEnd - rangeStart) / 60 }, (_, i) => rangeStart + i * 60)
 	);
+	// Long days (e.g. open all the time) scroll inside the calendar instead of the whole page,
+	// starting at 7am, or around now if today is on screen.
+	const long = $derived(rangeEnd - rangeStart > 16 * 60);
+	let scroller = $state<HTMLElement>();
+	$effect(() => {
+		if (!long || !scroller) return;
+		const el = scroller;
+		untrack(() => {
+			const showingNow = days.includes(today) && nowMinutes > 8 * 60;
+			const target = Math.max(rangeStart, showingNow ? nowMinutes - 60 : 7 * 60);
+			const hourPx = el.scrollHeight / ((rangeEnd - rangeStart) / 60);
+			// A little less, so the hour label at the top isn't cut in half.
+			el.scrollTop = ((target - rangeStart) / 60) * hourPx - 16;
+		});
+	});
+
 	const halves = $derived(
 		Array.from({ length: (rangeEnd - rangeStart) / 30 }, (_, i) => rangeStart + i * 30)
 	);
@@ -87,7 +104,11 @@
 <div class="frost overflow-clip rounded-3xl" style="--hour: 4.5rem; --gutter: 4.25rem;">
 	<!-- Day headings -->
 	<div
-		class="sticky top-0 z-30 flex border-b border-white bg-white/80 backdrop-blur-xl max-md:hidden"
+		class={[
+			'sticky top-0 z-30 flex border-b border-white bg-white/80 backdrop-blur-xl max-md:hidden',
+			// Leave room for the grid's scrollbar so the columns line up.
+			long && '[scrollbar-gutter:stable] overflow-y-hidden'
+		]}
 		role="presentation"
 	>
 		<div class="w-(--gutter) shrink-0"></div>
@@ -112,7 +133,15 @@
 	</div>
 
 	<!-- Time grid -->
-	<div class="relative flex">
+	<div
+		bind:this={scroller}
+		class={[
+			// items-start: columns are as tall as the whole day, not just the visible part.
+			'relative flex items-start',
+			long &&
+				'max-h-[min(46rem,72dvh)] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain'
+		]}
+	>
 		<div class="w-(--gutter) shrink-0" aria-hidden="true">
 			{#each hours as h (h)}
 				<div class="relative h-(--hour)">

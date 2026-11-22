@@ -56,7 +56,6 @@
 	let custom = $state(false);
 	let name = $state('');
 	let phone = $state('');
-	let remember = $state(true);
 	let error = $state('');
 	let busy = $state(false);
 	let booked = $state<Slot | null>(null);
@@ -71,7 +70,6 @@
 			custom = false;
 			name = device.name;
 			phone = device.phone;
-			remember = true;
 			error = '';
 			booked = null;
 			fitDuration();
@@ -175,8 +173,7 @@
 							const slot = result.data.booked as Slot;
 							booked = slot;
 							device.addMine(slot.id);
-							if (remember) device.remember(name.trim(), phone.trim());
-							else device.forget();
+							device.remember(name.trim(), phone.trim());
 							await update({ reset: false });
 						} else if (result.type === 'failure') {
 							error = String(result.data?.error ?? 'Something went wrong. Please try again.');
@@ -300,11 +297,6 @@
 						You’ll need this number to cancel. Only the post office can see it.
 					</p>
 				</div>
-
-				<label class="flex items-center gap-3 text-base font-semibold">
-					<input type="checkbox" bind:checked={remember} class="size-6 rounded accent-(--ink)" />
-					Remember my name and number on this device
-				</label>
 
 				{#if error}
 					<p
