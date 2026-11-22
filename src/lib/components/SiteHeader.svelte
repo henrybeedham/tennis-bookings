@@ -9,8 +9,11 @@
 	}: { title: string; href?: string; children?: Snippet } = $props();
 </script>
 
-<!-- A floating frosted pill that stays at the top while scrolling. -->
-<header class="sticky top-3 z-40 px-4">
+<!--
+	A floating frosted pill that stays at the top while scrolling. The frosted strip behind it
+	hides whatever scrolls up underneath, down to where other sticky things stop (--nav-offset).
+-->
+<header class="sticky top-0 z-40 h-(--nav-offset) bg-page/95 px-4 pt-3 backdrop-blur-xl">
 	<nav
 		class="glass mx-auto flex h-14 w-full max-w-3xl items-center gap-3 rounded-full pr-2 pl-2.5"
 		aria-label="Site"

@@ -47,7 +47,7 @@
 <SiteHeader title={s.title}>
 	<Button variant="ball" size="sm" class="h-10 px-4" onclick={() => book(day)}>
 		<CalendarPlus />
-		<span>Book<span class="max-sm:hidden"> the court</span></span>
+		<span>Book<span class="max-sm:hidden">&nbsp;the court</span></span>
 	</Button>
 </SiteHeader>
 

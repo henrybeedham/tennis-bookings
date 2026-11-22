@@ -105,7 +105,7 @@
 	<!-- Day headings -->
 	<div
 		class={[
-			'sticky top-0 z-20 flex border-b border-line bg-surface/85 backdrop-blur-xl max-md:hidden',
+			'sticky top-(--nav-offset) z-20 flex border-b border-line bg-surface max-md:hidden',
 			// Leave room for the grid's scrollbar so the columns line up.
 			long && '[scrollbar-gutter:stable] overflow-y-hidden'
 		]}

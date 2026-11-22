@@ -173,7 +173,7 @@
 
 	<!-- Day picker for phones -->
 	<div
-		class="sticky top-[4.75rem] z-30 -mx-4 grid grid-cols-7 gap-1.5 bg-page/80 px-4 py-2 backdrop-blur-xl md:hidden"
+		class="sticky top-(--nav-offset) z-30 -mx-4 grid grid-cols-7 gap-1.5 bg-page/95 px-4 py-2 backdrop-blur-xl md:hidden"
 		role="group"
 		aria-label="Choose a day"
 	>
