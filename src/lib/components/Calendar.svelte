@@ -228,7 +228,7 @@
 
 					{#each byDay.get(d) ?? [] as s (s.id)}
 						{@const short = s.end - s.start <= 30}
-						{@const yours = mine.has(s.id)}
+						{@const yours = mine.has(s.ref)}
 						<button
 							type="button"
 							class={[

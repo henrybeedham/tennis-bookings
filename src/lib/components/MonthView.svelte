@@ -151,7 +151,7 @@
 								class={[
 									'flex h-5 w-full min-w-0 items-center gap-1.5 rounded-lg px-1.5 text-left text-xs leading-none transition-[filter] hover:brightness-[0.97] dark:hover:brightness-125',
 									tone(s),
-									mine.has(s.id) && 'ring-2 ring-ink ring-offset-1 ring-offset-surface'
+									mine.has(s.ref) && 'ring-2 ring-ink ring-offset-1 ring-offset-surface'
 								]}
 								onclick={() => onopen(s)}
 								aria-label="{s.kind === 'block'

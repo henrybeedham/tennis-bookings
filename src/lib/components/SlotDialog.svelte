@@ -48,7 +48,7 @@
 	const finished = $derived(
 		!!slot && (slot.date < today || (slot.date === today && slot.end <= nowMinutes))
 	);
-	const yours = $derived(!!slot && device.mine.has(slot.id));
+	const yours = $derived(!!slot && device.mine.has(slot.ref));
 </script>
 
 <Dialog.Root bind:open>
@@ -113,7 +113,7 @@
 						return async ({ result, update }) => {
 							busy = false;
 							if (result.type === 'success') {
-								device.removeMine(slot.id);
+								device.removeMine(slot.ref);
 								open = false;
 								toast.success('Booking cancelled');
 								await update();

@@ -147,6 +147,7 @@ export function getAdminSlots(from: ISODate, to: ISODate): AdminSlot[] {
 
 	const slots: AdminSlot[] = one.map((r) => ({
 		id: `b${r.id}`,
+		ref: `b${r.id}@${r.created_at}`,
 		date: r.date,
 		start: r.start,
 		end: r.end,
@@ -180,6 +181,7 @@ export function getAdminSlots(from: ISODate, to: ISODate): AdminSlot[] {
 				if (skips.has(`${s.id}:${d}`)) continue;
 				slots.push({
 					id: `s${s.id}:${d}`,
+					ref: `s${s.id}:${d}@${s.created_at}`,
 					date: d,
 					start: s.start,
 					end: s.end,
@@ -204,6 +206,7 @@ export function getAdminSlots(from: ISODate, to: ISODate): AdminSlot[] {
 export function toPublic(s: AdminSlot): Slot {
 	return {
 		id: s.id,
+		ref: s.ref,
 		date: s.date,
 		start: s.start,
 		end: s.end,

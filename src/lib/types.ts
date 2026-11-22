@@ -6,6 +6,11 @@ export type SlotKind = 'booking' | 'block';
 export interface Slot {
 	/** "b12" for one-off bookings, "s3:2026-11-28" for an occurrence of a regular booking */
 	id: string;
+	/**
+	 * The id plus when it was made. Database ids can be handed out again after a booking is
+	 * deleted, so this is what a device uses to remember which bookings it made.
+	 */
+	ref: string;
 	date: ISODate;
 	start: number;
 	end: number;

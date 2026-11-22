@@ -2,7 +2,10 @@
 // type their details every time. Nothing here is needed for the site to work.
 
 const ME_KEY = 'tb:me';
-const MINE_KEY = 'tb:mine';
+// Older versions stored bare ids under 'tb:mine', which could match someone else's booking
+// once an id was reused, so those are dropped.
+const MINE_KEY = 'tb:mine:v2';
+const OLD_MINE_KEY = 'tb:mine';
 
 function read<T>(key: string, fallback: T): T {
 	try {
@@ -29,6 +32,9 @@ class Device {
 		this.name = me.name ?? '';
 		this.phone = me.phone ?? '';
 		this.mine = new Set(read<string[]>(MINE_KEY, []));
+		try {
+			localStorage.removeItem(OLD_MINE_KEY);
+		} catch {}
 	}
 
 	remember(name: string, phone: string) {

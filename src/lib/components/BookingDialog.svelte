@@ -177,7 +177,7 @@
 						if (result.type === 'success' && result.data?.booked) {
 							const slot = result.data.booked as Slot;
 							booked = slot;
-							device.addMine(slot.id);
+							device.addMine(slot.ref);
 							device.remember(name.trim(), phone.trim());
 							await update({ reset: false });
 						} else if (result.type === 'failure') {
