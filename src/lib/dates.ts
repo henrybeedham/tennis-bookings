@@ -127,3 +127,27 @@ export function formatDuration(mins: number): string {
 	const label = `${h}${half ? '½' : ''}`;
 	return `${label} ${h === 1 && !half ? 'hour' : 'hours'}`;
 }
+
+export const startOfMonth = (d: ISODate): ISODate => `${d.slice(0, 7)}-01`;
+
+/** Same day of the month, n months on (clamped, so 31 Jan + 1 month = 28/29 Feb). */
+export function addMonths(d: ISODate, n: number): ISODate {
+	const date = parseDate(d);
+	const day = date.getUTCDate();
+	date.setUTCDate(1);
+	date.setUTCMonth(date.getUTCMonth() + n);
+	const last = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+	date.setUTCDate(Math.min(day, last));
+	return toISO(date);
+}
+
+/** The six Monday-to-Sunday weeks shown for the month containing d. */
+export function monthGrid(d: ISODate): ISODate[] {
+	const start = startOfWeek(startOfMonth(d));
+	return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}
+
+/** "November 2026" */
+export const formatMonth = (d: ISODate) => monthFmt.format(parseDate(d));
+
+export const isSameMonth = (a: ISODate, b: ISODate) => a.slice(0, 7) === b.slice(0, 7);

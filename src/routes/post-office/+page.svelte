@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 	import CalendarPlus from '@lucide/svelte/icons/calendar-plus';
 	import CalendarDays from '@lucide/svelte/icons/calendar-days';
@@ -43,7 +44,10 @@
 	let bookStart = $state(0);
 	let slotOpen = $state(false);
 	let selected = $state<AdminSlot | null>(null);
-	let tab = $state('calendar');
+	const TABS = ['calendar', 'find', 'regular', 'settings', 'activity'];
+	const requested = page.url.searchParams.get('tab') ?? '';
+	// Opens on the tab named in ?tab=…, e.g. from the Settings button on the public page.
+	let tab = $state(TABS.includes(requested) ? requested : 'calendar');
 	let query = $state('');
 	let stopping = $state<number | null>(null);
 	let stopFrom = $state('');
@@ -203,7 +207,9 @@
 			<!-- Calendar -->
 			<Tabs.Content value="calendar">
 				<Planner
-					weekStart={data.weekStart}
+					view={data.view}
+					from={data.from}
+					to={data.to}
 					focus={data.focus}
 					today={data.today}
 					nowMinutes={data.nowMinutes}

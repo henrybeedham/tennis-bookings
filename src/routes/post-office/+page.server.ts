@@ -13,20 +13,23 @@ import {
 	saveSettings
 } from '#lib/server/bookings.js';
 import { checkPassword, logIn, logOut } from '#lib/server/auth.js';
-import { readBookingForm, weekFromUrl } from '#lib/server/forms.js';
+import { readBookingForm, rangeFromUrl } from '#lib/server/forms.js';
 import { addDays, isValidDate, parseTime } from '#lib/dates.js';
 
-export const load: PageServerLoad = ({ url, locals, depends }) => {
+export const load: PageServerLoad = ({ url, locals, depends, cookies }) => {
 	if (!locals.admin) return { admin: false as const };
 	depends('app:slots');
-	const { now, focus, weekStart, weekEnd } = weekFromUrl(url);
+	const { now, focus, view, weekStart, from, to } = rangeFromUrl(url, cookies);
 	return {
 		admin: true as const,
 		focus,
+		view,
 		weekStart,
+		from,
+		to,
 		today: now.date,
 		nowMinutes: now.minutes,
-		slots: getAdminSlots(weekStart, weekEnd),
+		slots: getAdminSlots(from, to),
 		settings: getSettings(),
 		series: listSeries(),
 		upcoming: getAdminSlots(now.date, addDays(now.date, 120)).filter(

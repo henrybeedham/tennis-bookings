@@ -8,17 +8,22 @@ import {
 	getSettings,
 	toPublic
 } from '#lib/server/bookings.js';
-import { readBookingForm, weekFromUrl } from '#lib/server/forms.js';
+import { readBookingForm, rangeFromUrl } from '#lib/server/forms.js';
 
-export const load: PageServerLoad = ({ url, depends }) => {
+export const load: PageServerLoad = ({ url, depends, locals, cookies }) => {
 	depends('app:slots');
-	const { now, focus, weekStart, weekEnd } = weekFromUrl(url);
+	const { now, focus, view, weekStart, from, to } = rangeFromUrl(url, cookies);
 	return {
+		/** Logged in as the post office, so show a shortcut to the post office settings. */
+		admin: locals.admin,
 		focus,
+		view,
 		weekStart,
+		from,
+		to,
 		today: now.date,
 		nowMinutes: now.minutes,
-		slots: getPublicSlots(weekStart, weekEnd),
+		slots: getPublicSlots(from, to),
 		settings: getSettings()
 	};
 };

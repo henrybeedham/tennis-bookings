@@ -29,6 +29,11 @@
 		allowPast?: boolean;
 		onpick: (date: ISODate, start: number) => void;
 		onopen: (slot: Slot) => void;
+		/**
+		 * On wide screens, fill the height the parent gives it instead of growing to fit
+		 * the day. The day shrinks to fit, and only scrolls inside if hours would get too small.
+		 */
+		fit?: boolean;
 	}
 
 	let {
@@ -43,7 +48,8 @@
 		mine = new Set(),
 		allowPast = false,
 		onpick,
-		onopen
+		onopen,
+		fit = false
 	}: Props = $props();
 
 	// Show whole hours, and stretch the range if anything was booked outside opening hours.
@@ -52,14 +58,15 @@
 	const hours = $derived(
 		Array.from({ length: (rangeEnd - rangeStart) / 60 }, (_, i) => rangeStart + i * 60)
 	);
-	// Long days (e.g. open all the time) scroll inside the calendar instead of the whole page,
-	// starting at 7am, or around now if today is on screen.
+	// Long days (e.g. open all the time) scroll inside the calendar instead of the whole page.
 	const long = $derived(rangeEnd - rangeStart > 16 * 60);
+	// When the calendar scrolls inside itself, start at 7am, or around now if today is on screen.
 	let scroller = $state<HTMLElement>();
 	$effect(() => {
-		if (!long || !scroller) return;
+		if (!scroller) return;
 		const el = scroller;
 		untrack(() => {
+			if (el.scrollHeight <= el.clientHeight + 1) return;
 			const showingNow = days.includes(today) && nowMinutes > 8 * 60;
 			const target = Math.max(rangeStart, showingNow ? nowMinutes - 60 : 7 * 60);
 			const hourPx = el.scrollHeight / ((rangeEnd - rangeStart) / 60);
@@ -78,8 +85,10 @@
 		return map;
 	});
 
-	const top = (m: number) => `calc(${(m - rangeStart) / 60} * var(--hour))`;
-	const height = (s: Slot) => `calc(${(s.end - s.start) / 60} * var(--hour) - 3px)`;
+	// Positions are a share of the day, so the grid can be any height.
+	const span = $derived(rangeEnd - rangeStart);
+	const top = (m: number) => `${((m - rangeStart) / span) * 100}%`;
+	const height = (s: Slot) => `calc(${((s.end - s.start) / span) * 100}% - 3px)`;
 
 	function isPast(date: ISODate, m: number) {
 		if (allowPast) return false;
@@ -101,31 +110,39 @@
 	}
 </script>
 
-<div class="panel overflow-clip rounded-3xl" style="--hour: 4.25rem; --gutter: 4rem;">
+<div
+	class={['panel overflow-clip rounded-3xl', fit && 'md:flex md:min-h-0 md:flex-1 md:flex-col']}
+	style="--hour: 4.25rem; --min-hour: 2.2rem; --gutter: 4rem; --hours: {hours.length};"
+>
 	<!-- Day headings -->
 	<div
 		class={[
-			'sticky top-(--nav-offset) z-20 flex border-b border-line bg-surface max-md:hidden',
+			'z-20 flex shrink-0 border-b border-line bg-surface max-md:hidden',
+			!fit && 'sticky top-(--nav-offset)',
 			// Leave room for the grid's scrollbar so the columns line up.
-			long && '[scrollbar-gutter:stable] overflow-y-hidden'
+			(fit || long) && '[scrollbar-gutter:stable] overflow-y-hidden'
 		]}
 		role="presentation"
 	>
 		<div class="w-(--gutter) shrink-0"></div>
 		{#each days as d (d)}
-			<div class="min-w-0 flex-1 border-l border-grid px-2 py-3 text-center {columnClass(d)}">
-				<div class="text-xs font-medium tracking-[0.06em] text-ink-soft uppercase">
+			<div
+				class="flex min-w-0 flex-1 items-center justify-center gap-2 border-l border-grid px-2 py-2 {columnClass(
+					d
+				)}"
+			>
+				<span class="text-xs font-medium tracking-[0.06em] text-ink-soft uppercase">
 					<span class="lg:hidden">{shortDay(d)}</span>
 					<span class="max-lg:hidden">{dayName(d)}</span>
-				</div>
-				<div
+				</span>
+				<span
 					class={[
-						'mx-auto mt-1 grid size-9 place-items-center rounded-full text-lg font-semibold tracking-[-0.01em] tabular-nums',
+						'grid size-8 place-items-center rounded-full text-base font-semibold tracking-[-0.01em] tabular-nums',
 						d === today ? 'bg-ball text-on-ball' : 'text-ink'
 					]}
 				>
 					{dayOfMonth(d)}
-				</div>
+				</span>
 			</div>
 		{/each}
 	</div>
@@ -133,137 +150,160 @@
 	<!-- Time grid -->
 	<div
 		bind:this={scroller}
+		data-cal-scroller
 		class={[
-			// items-start: columns are as tall as the whole day, not just the visible part.
-			'relative flex items-start',
+			// Top padding leaves room for the first hour's label, centred on its line like the rest.
+			'relative overscroll-contain pt-2.5',
+			fit && 'md:min-h-0 md:flex-1 md:[scrollbar-gutter:stable] md:overflow-y-auto',
 			long &&
-				'max-h-[min(46rem,72dvh)] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain'
+				(fit
+					? 'max-md:max-h-[72dvh] max-md:overflow-y-auto'
+					: 'max-h-[min(46rem,72dvh)] [scrollbar-gutter:stable] overflow-y-auto')
 		]}
 	>
-		<div class="w-(--gutter) shrink-0" aria-hidden="true">
-			{#each hours as h (h)}
-				<div class="relative h-(--hour)">
-					<span
-						class={[
-							'absolute right-3 text-xs font-medium text-ink-soft tabular-nums',
-							h === rangeStart ? 'top-1.5' : '-top-[0.7em]'
-						]}
-					>
-						{formatTime(h)}
-					</span>
+		<!-- The whole day. When fitting, it fills the panel unless hours would get too short. -->
+		<div
+			class={[
+				'relative flex h-[calc(var(--hours)*var(--hour))]',
+				fit && 'md:h-[max(calc(100%-2px),calc(var(--hours)*var(--min-hour)))]'
+			]}
+		>
+			<div class="flex w-(--gutter) shrink-0 flex-col" aria-hidden="true">
+				{#each hours as h (h)}
+					<div class="relative min-h-0 flex-1">
+						<span
+							class={[
+								'absolute -top-[0.7em] right-3 text-xs font-medium text-ink-soft tabular-nums'
+							]}
+						>
+							{formatTime(h)}
+						</span>
+					</div>
+				{/each}
+			</div>
+
+			{#each days as d (d)}
+				<div class="relative flex min-w-0 flex-1 flex-col border-l border-grid {columnClass(d)}">
+					{#each halves as m (m)}
+						{@const past = isPast(d, m)}
+						{@const available = isOpen(m)}
+						<button
+							type="button"
+							class={[
+								'group/cell flex w-full items-center px-2 text-left text-sm font-medium transition-colors',
+								'min-h-0 flex-1 border-t',
+								m % 60 === 0 ? 'border-grid' : 'border-dashed border-grid/50',
+								past || !available
+									? 'bg-ink/[0.03]'
+									: 'hover:bg-ball/15 focus-visible:bg-ball/15 focus-visible:outline-offset-[-2px]'
+							]}
+							disabled={past || !available}
+							onclick={() => onpick(d, m)}
+							aria-label="Book {formatLong(d)} at {formatTime(m)}"
+						>
+							{#if !past && available}
+								<span
+									class="flex items-center gap-1 text-ball-ink opacity-0 transition-opacity group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100"
+								>
+									<Plus class="size-4" />
+									{formatTime(m)}
+								</span>
+							{/if}
+						</button>
+					{/each}
+
+					{#each byDay.get(d) ?? [] as s (s.id)}
+						{@const short = s.end - s.start <= 30}
+						{@const yours = mine.has(s.id)}
+						<button
+							type="button"
+							class={[
+								'slot absolute inset-x-1 z-10 flex min-w-0 flex-col overflow-hidden rounded-xl px-2.5 text-left',
+								'transition-[filter] hover:brightness-[0.97] dark:hover:brightness-125',
+								short ? 'justify-center py-0' : 'py-1.5',
+								slotTone(s),
+								yours && 'ring-2 ring-ink ring-offset-2 ring-offset-surface'
+							]}
+							style:top={top(s.start)}
+							style:height={height(s)}
+							onclick={() => onopen(s)}
+							aria-label="{s.kind === 'block'
+								? 'Court unavailable'
+								: 'Booked by ' + s.name}, {formatLong(d)}, {formatRange(s.start, s.end)}"
+						>
+							{#if short}
+								<span class="flex min-w-0 items-center gap-1.5 text-[0.8125rem] leading-tight">
+									<span class="shrink-0 font-medium text-ink-soft tabular-nums">
+										{formatTime(s.start)}
+									</span>
+									<span class="truncate font-semibold">{s.name}</span>
+								</span>
+							{:else}
+								<span
+									class="slot-compact min-w-0 items-center gap-1.5 text-[0.8125rem] leading-tight"
+								>
+									<span class="shrink-0 font-medium text-ink-soft tabular-nums">
+										{formatTime(s.start)}
+									</span>
+									<span class="truncate font-semibold">{s.name}</span>
+								</span>
+								<span
+									class="slot-full flex min-w-0 items-center gap-1.5 text-sm leading-snug font-semibold"
+								>
+									{#if s.kind === 'block'}<Lock class="size-3.5 shrink-0" />{/if}
+									<span class="truncate">{s.name}</span>
+									{#if s.recurring && s.kind !== 'block'}<Repeat
+											class="size-3.5 shrink-0 opacity-60"
+										/>{/if}
+								</span>
+								<span
+									class="slot-full text-[0.8125rem] leading-snug font-medium text-ink-soft tabular-nums"
+								>
+									{formatRange(s.start, s.end)}
+								</span>
+								{#if yours && s.end - s.start >= 90}
+									<span
+										class="slot-full mt-auto mb-0.5 self-start text-[0.6875rem] font-semibold tracking-[0.06em] text-ball-ink uppercase"
+									>
+										Your booking
+									</span>
+								{/if}
+							{/if}
+						</button>
+					{/each}
+
+					{#if d === today && nowMinutes >= rangeStart && nowMinutes <= rangeEnd}
+						<div
+							class="pointer-events-none absolute inset-x-0 z-20 flex items-center"
+							style:top={top(nowMinutes)}
+							aria-hidden="true"
+						>
+							<span class="-ml-1 size-2 rounded-full bg-destructive"></span>
+							<span class="h-px flex-1 bg-destructive"></span>
+						</div>
+					{/if}
 				</div>
 			{/each}
 		</div>
-
-		{#each days as d (d)}
-			<div class="relative min-w-0 flex-1 border-l border-grid {columnClass(d)}">
-				{#each halves as m (m)}
-					{@const past = isPast(d, m)}
-					{@const available = isOpen(m)}
-					<button
-						type="button"
-						class={[
-							'group/cell flex w-full items-center px-2 text-left text-sm font-medium transition-colors',
-							'h-[calc(var(--hour)/2)] border-t',
-							m % 60 === 0 ? 'border-grid' : 'border-dashed border-grid/50',
-							past || !available
-								? 'bg-ink/[0.03]'
-								: 'hover:bg-ball/15 focus-visible:bg-ball/15 focus-visible:outline-offset-[-2px]'
-						]}
-						disabled={past || !available}
-						onclick={() => onpick(d, m)}
-						aria-label="Book {formatLong(d)} at {formatTime(m)}"
-					>
-						{#if !past && available}
-							<span
-								class="flex items-center gap-1 text-ball-ink opacity-0 transition-opacity group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100"
-							>
-								<Plus class="size-4" />
-								{formatTime(m)}
-							</span>
-						{/if}
-					</button>
-				{/each}
-
-				{#each byDay.get(d) ?? [] as s (s.id)}
-					{@const short = s.end - s.start <= 30}
-					{@const yours = mine.has(s.id)}
-					<button
-						type="button"
-						class={[
-							'slot absolute inset-x-1 z-10 flex min-w-0 flex-col overflow-hidden rounded-xl px-2.5 text-left',
-							'transition-[filter] hover:brightness-[0.97] dark:hover:brightness-125',
-							short ? 'justify-center py-0.5' : 'py-1.5',
-							slotTone(s),
-							yours && 'ring-2 ring-ink ring-offset-2 ring-offset-surface'
-						]}
-						style:top={top(s.start)}
-						style:height={height(s)}
-						onclick={() => onopen(s)}
-						aria-label="{s.kind === 'block'
-							? 'Court unavailable'
-							: 'Booked by ' + s.name}, {formatLong(d)}, {formatRange(s.start, s.end)}"
-					>
-						{#if short}
-							<span class="flex min-w-0 items-center gap-1.5 text-sm leading-tight">
-								<span class="shrink-0 font-medium text-ink-soft tabular-nums">
-									{formatTime(s.start)}
-								</span>
-								<span class="truncate font-semibold">{s.name}</span>
-							</span>
-						{:else}
-							<span class="flex min-w-0 items-center gap-1.5 text-sm leading-snug font-semibold">
-								{#if s.kind === 'block'}<Lock class="size-3.5 shrink-0" />{/if}
-								<span class="truncate">{s.name}</span>
-								{#if s.recurring && s.kind !== 'block'}<Repeat
-										class="size-3.5 shrink-0 opacity-60"
-									/>{/if}
-							</span>
-							<span class="text-[0.8125rem] leading-snug font-medium text-ink-soft tabular-nums">
-								{formatRange(s.start, s.end)}
-							</span>
-							{#if yours && s.end - s.start >= 90}
-								<span
-									class="mt-auto mb-0.5 self-start text-[0.6875rem] font-semibold tracking-[0.06em] text-ball-ink uppercase"
-								>
-									Your booking
-								</span>
-							{/if}
-						{/if}
-					</button>
-				{/each}
-
-				{#if d === today && nowMinutes >= rangeStart && nowMinutes <= rangeEnd}
-					<div
-						class="pointer-events-none absolute inset-x-0 z-20 flex items-center"
-						style:top={top(nowMinutes)}
-						aria-hidden="true"
-					>
-						<span class="-ml-1 size-2 rounded-full bg-destructive"></span>
-						<span class="h-px flex-1 bg-destructive"></span>
-					</div>
-				{/if}
-			</div>
-		{/each}
 	</div>
 </div>
 
 <style>
 	.slot {
 		color: var(--ink);
+		/* Lets the booking's text adapt to how tall the block actually is. */
+		container-type: size;
 	}
-	/* Tinted fill with a soft edge in the same colour. */
-	.tone-booking {
-		background-color: var(--slot-booking);
-		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--slot-booking-edge) 45%, transparent);
+	.slot-compact {
+		display: none;
 	}
-	.tone-regular {
-		background-color: var(--slot-regular);
-		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--slot-regular-edge) 45%, transparent);
-	}
-	.tone-block {
-		background-color: var(--slot-block);
-		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--slot-block-edge) 40%, transparent);
-		color: var(--ink-soft);
+	/* Too short for name and time on separate lines: show "10:00 Margaret Jones" on one. */
+	@container (max-height: 2.6rem) {
+		.slot-full {
+			display: none;
+		}
+		.slot-compact {
+			display: flex;
+		}
 	}
 </style>

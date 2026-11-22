@@ -18,7 +18,6 @@
 		formatRange,
 		formatTime,
 		isValidDate,
-		startOfWeek,
 		type ISODate
 	} from '#lib/dates.js';
 	import type { Slot } from '#lib/types.js';
@@ -29,7 +28,9 @@
 		start: number;
 		today: ISODate;
 		nowMinutes: number;
-		weekStart: ISODate;
+		/** The days whose bookings are in `slots`. */
+		from: ISODate;
+		to: ISODate;
 		slots: Slot[];
 		openTime: number;
 		closeTime: number;
@@ -42,7 +43,8 @@
 		start: initialStart,
 		today,
 		nowMinutes,
-		weekStart,
+		from,
+		to,
 		slots,
 		openTime,
 		closeTime,
@@ -76,8 +78,8 @@
 		});
 	});
 
-	// We only know about bookings in the week on screen. The server double-checks everything.
-	const known = $derived(isValidDate(date) && startOfWeek(date) === weekStart);
+	// We only know about bookings on the days loaded. The server double-checks everything.
+	const known = $derived(isValidDate(date) && date >= from && date <= to);
 	const daySlots = $derived(known ? slots.filter((s) => s.date === date) : []);
 	const overlaps = (s: number, e: number) => daySlots.find((x) => x.start < e && x.end > s);
 	const earliest = $derived(date === today ? Math.floor(nowMinutes / 30) * 30 : openTime);

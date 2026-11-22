@@ -1,6 +1,7 @@
 <script lang="ts">
 	import CalendarPlus from '@lucide/svelte/icons/calendar-plus';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
+	import Settings from '@lucide/svelte/icons/settings-2';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import SiteHeader from '#lib/components/SiteHeader.svelte';
 	import Notice from '#lib/components/Notice.svelte';
@@ -48,6 +49,18 @@
 </svelte:head>
 
 <SiteHeader title={s.title}>
+	{#if data.admin}
+		<Button
+			variant="ghost"
+			size="sm"
+			class="h-10 px-3 text-ink max-sm:px-2.5"
+			href="/post-office?tab=settings"
+			aria-label="Post office settings"
+		>
+			<Settings />
+			<span class="max-sm:hidden">Settings</span>
+		</Button>
+	{/if}
 	<Button
 		variant="ghost"
 		size="sm"
@@ -63,11 +76,16 @@
 	</Button>
 </SiteHeader>
 
-<div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 pt-8 pb-12 sm:px-6 sm:pt-10">
+<!-- On desktop the page is exactly the window height; only the calendar scrolls, if anything. -->
+<div
+	class="mx-auto flex max-w-7xl flex-col gap-6 px-4 pt-8 pb-12 sm:px-6 sm:pt-10 md:h-[calc(100dvh-var(--nav-offset))] md:gap-3 md:pt-3 md:pb-4"
+>
 	{#if s.notice}<Notice text={s.notice} />{/if}
 
 	<Planner
-		weekStart={data.weekStart}
+		view={data.view}
+		from={data.from}
+		to={data.to}
 		focus={data.focus}
 		today={data.today}
 		nowMinutes={data.nowMinutes}
@@ -78,6 +96,7 @@
 		onpick={book}
 		onopen={show}
 		ondaychange={(d) => (day = d)}
+		fit
 	/>
 </div>
 
@@ -87,7 +106,8 @@
 	start={bookStart}
 	today={data.today}
 	nowMinutes={data.nowMinutes}
-	weekStart={data.weekStart}
+	from={data.from}
+	to={data.to}
 	slots={data.slots}
 	openTime={s.open}
 	closeTime={s.close}
