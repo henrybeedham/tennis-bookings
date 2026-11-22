@@ -49,20 +49,20 @@
 
 {#if touch.current}
 	<Input {id} {name} type="date" {min} {max} {required} bind:value />
-	{#if selected}<p class="font-semibold text-ink-soft">{formatLong(value, true)}</p>{/if}
+	{#if selected}<p class="text-sm text-ink-soft">{formatLong(value, true)}</p>{/if}
 {:else}
 	{#if name}<input type="hidden" {name} {value} />{/if}
 	<Popover.Root bind:open>
 		<Popover.Trigger
 			{id}
-			class="flex h-13 w-full items-center gap-3 rounded-xl border border-input bg-white/85 px-4 text-left text-lg font-semibold text-ink shadow-[inset_0_1px_2px_oklch(0.4_0.05_245/0.08)] transition-[border-color,box-shadow] outline-none hover:border-glacier focus-visible:border-glacier focus-visible:ring-4 focus-visible:ring-glacier/20 data-[state=open]:border-glacier data-[state=open]:ring-4 data-[state=open]:ring-glacier/20"
+			class="flex h-12 w-full items-center gap-2.5 rounded-xl border border-input bg-transparent px-3.5 text-left text-base font-medium text-ink transition-[border-color,box-shadow] outline-none hover:border-ink-soft/50 focus-visible:border-ball-ink focus-visible:ring-3 focus-visible:ring-ball-ink/15 data-[state=open]:border-ball-ink data-[state=open]:ring-3 data-[state=open]:ring-ball-ink/15"
 		>
-			<CalendarDays class="size-5 shrink-0 text-glacier" />
+			<CalendarDays class="size-4.5 shrink-0 text-ink-soft" />
 			<span class={['flex-1 truncate', !selected && 'font-normal text-ink-soft/70']}>
 				{selected ? formatLong(value, true) : placeholder}
 			</span>
 			<ChevronDown
-				class="size-5 shrink-0 text-ink-soft transition-transform {open ? 'rotate-180' : ''}"
+				class="size-4 shrink-0 text-ink-soft transition-transform {open ? 'rotate-180' : ''}"
 			/>
 		</Popover.Trigger>
 		<Popover.Content align="start" class="w-auto">
@@ -77,11 +77,11 @@
 				initialFocus
 			/>
 			{#if shortcuts}
-				<div class="grid grid-cols-2 gap-2 border-t border-ice-200 pt-3">
+				<div class="grid grid-cols-2 gap-2 border-t border-line pt-3">
 					{#each [{ label: 'Today', d: today }, { label: 'Tomorrow', d: addDays(today, 1) }] as s (s.label)}
 						<button
 							type="button"
-							class="h-11 rounded-xl bg-ice-200/70 font-bold text-ink transition-colors hover:bg-ice-300/70 disabled:opacity-40"
+							class="h-10 rounded-full bg-raised text-sm font-medium text-ink transition-colors hover:bg-line disabled:opacity-40"
 							disabled={!inRange(s.d)}
 							onclick={() => choose(s.d)}
 						>

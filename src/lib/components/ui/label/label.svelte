@@ -13,7 +13,7 @@
 	bind:ref
 	data-slot="label"
 	class={cn(
-		'flex items-center gap-2 text-base font-bold text-ink select-none peer-disabled:opacity-50',
+		'flex items-center gap-2 text-sm font-medium text-ink select-none peer-disabled:opacity-50',
 		className
 	)}
 	{...restProps}

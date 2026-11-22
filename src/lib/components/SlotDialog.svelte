@@ -60,25 +60,25 @@
 						<Lock class="size-6" /> Court not available
 					</Dialog.Title>
 				{:else}
-					<p class="text-base font-bold tracking-wide text-ink-soft uppercase">
+					<p class="text-xs font-medium tracking-[0.08em] text-ink-soft uppercase">
 						{yours ? 'Your booking' : 'Booked by'}
 					</p>
-					<Dialog.Title class="text-3xl">{slot.name}</Dialog.Title>
+					<Dialog.Title class="text-2xl">{slot.name}</Dialog.Title>
 				{/if}
 			</Dialog.Header>
 
-			<div class="rounded-2xl bg-ice-100 p-5">
-				{#if slot.kind === 'block'}<p class="mb-1 text-xl font-bold">{slot.name}</p>{/if}
-				<p class="text-xl font-bold">{formatLong(slot.date)}</p>
-				<p class="mt-1 text-xl font-semibold tabular-nums">{formatRange(slot.start, slot.end)}</p>
+			<div class="rounded-2xl bg-raised/60 p-4">
+				{#if slot.kind === 'block'}<p class="mb-1 text-lg font-semibold">{slot.name}</p>{/if}
+				<p class="text-lg font-semibold">{formatLong(slot.date)}</p>
+				<p class="mt-1 text-lg font-semibold tabular-nums">{formatRange(slot.start, slot.end)}</p>
 				{#if slot.recurring}
 					<p
-						class="mt-3 inline-flex items-center gap-2 rounded-full bg-(--slot-regular) px-3 py-1 font-bold"
+						class="mt-3 inline-flex items-center gap-2 rounded-md bg-(--slot-regular) px-2 py-0.5 text-sm font-medium"
 					>
 						<Repeat class="size-4" /> Every {DAY_NAMES[weekday(slot.date)]}
 					</p>
 				{/if}
-				{#if slot.note}<p class="mt-3 text-lg text-ink-soft">{slot.note}</p>{/if}
+				{#if slot.note}<p class="mt-3 text-base text-ink-soft">{slot.note}</p>{/if}
 			</div>
 
 			{#if slot.kind === 'block'}
@@ -106,7 +106,7 @@
 				<form
 					method="POST"
 					action={actionUrl('cancel', '/')}
-					class="flex flex-col gap-4 rounded-2xl border border-destructive/25 bg-destructive/5 p-5"
+					class="flex flex-col gap-4 rounded-2xl border border-destructive/25 bg-destructive/5 p-4"
 					use:enhance={() => {
 						busy = true;
 						error = '';
@@ -126,7 +126,7 @@
 					}}
 				>
 					<input type="hidden" name="id" value={slot.id} />
-					<p class="text-lg font-semibold">
+					<p class="text-base font-semibold">
 						{#if started}
 							This frees the court for the rest of the time. Type the phone number used to make the
 							booking.
@@ -149,7 +149,7 @@
 						/>
 					</div>
 					{#if error}
-						<p role="alert" class="flex items-start gap-2 text-lg font-semibold text-destructive">
+						<p role="alert" class="flex items-start gap-2 text-base font-semibold text-destructive">
 							<TriangleAlert class="mt-1 size-5 shrink-0" />
 							{error}
 						</p>

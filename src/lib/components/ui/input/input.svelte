@@ -25,7 +25,7 @@
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			'h-13 w-full min-w-0 rounded-xl border border-input bg-white/85 px-4 text-lg text-ink shadow-[inset_0_1px_2px_oklch(0.4_0.05_245/0.08)] transition-[border-color,box-shadow] outline-none placeholder:text-ink-soft/60 focus-visible:border-glacier focus-visible:ring-4 focus-visible:ring-glacier/20 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15',
+			'h-12 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-ink transition-[border-color,box-shadow] outline-none placeholder:text-ink-soft/55 focus-visible:border-ball-ink focus-visible:ring-3 focus-visible:ring-ball-ink/15 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/15',
 			className
 		)}
 		type="file"
@@ -38,7 +38,7 @@
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			'h-13 w-full min-w-0 rounded-xl border border-input bg-white/85 px-4 text-lg text-ink shadow-[inset_0_1px_2px_oklch(0.4_0.05_245/0.08)] transition-[border-color,box-shadow] outline-none placeholder:text-ink-soft/60 focus-visible:border-glacier focus-visible:ring-4 focus-visible:ring-glacier/20 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15',
+			'h-12 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-ink transition-[border-color,box-shadow] outline-none placeholder:text-ink-soft/55 focus-visible:border-ball-ink focus-visible:ring-3 focus-visible:ring-ball-ink/15 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/15',
 			className
 		)}
 		{type}

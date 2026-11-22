@@ -151,14 +151,14 @@
 			method="POST"
 			action="?/login"
 			use:enhance
-			class="frost flex w-full max-w-md flex-col gap-5 rounded-3xl p-7"
+			class="panel flex w-full max-w-sm flex-col gap-5 rounded-3xl p-7"
 		>
-			<div class="grid size-14 place-items-center rounded-2xl bg-ink text-white">
-				<Lock class="size-7" />
+			<div class="grid size-11 place-items-center rounded-2xl bg-ball text-on-ball">
+				<Lock class="size-5" />
 			</div>
 			<div>
-				<h1 class="text-3xl font-bold">Post office</h1>
-				<p class="mt-1 text-lg text-ink-soft">Log in to manage all court bookings.</p>
+				<h1 class="text-2xl font-semibold">Post office</h1>
+				<p class="mt-1 text-base text-ink-soft">Log in to manage all court bookings.</p>
 			</div>
 			<div class="flex flex-col gap-2">
 				<Label for="pw">Password</Label>
@@ -176,15 +176,18 @@
 		</form>
 	</main>
 {:else}
-	<div class="mx-auto flex max-w-7xl flex-col gap-5 px-4 pt-5 pb-10 sm:gap-6 sm:px-6 sm:pt-8">
-		<SiteHeader title="Post office" subtitle={data.settings.title}>
-			<div class="flex items-center gap-2">
-				<Button variant="outline" href="/">Public calendar</Button>
-				<form method="POST" action="?/logout">
-					<Button type="submit" variant="ghost">Log out</Button>
-				</form>
-			</div>
-		</SiteHeader>
+	<SiteHeader title="Post office" href="/post-office">
+		<Button variant="ghost" size="sm" class="h-10 max-sm:hidden" href="/">Public calendar</Button>
+		<form method="POST" action="?/logout">
+			<Button type="submit" variant="outline" size="sm" class="h-10">Log out</Button>
+		</form>
+	</SiteHeader>
+
+	<div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 pt-10 pb-12 sm:px-6">
+		<div class="flex flex-col gap-1">
+			<p class="text-sm text-ink-soft">{data.settings.title}</p>
+			<h1 class="text-fade text-4xl font-semibold tracking-[-0.04em]">Bookings</h1>
+		</div>
 
 		{#if data.settings.notice}<Notice text={data.settings.notice} />{/if}
 
@@ -212,8 +215,8 @@
 					onopen={show}
 				>
 					{#snippet actions(day)}
-						<Button size="lg" class="max-md:w-full" onclick={() => book(day)}>
-							<CalendarPlus class="size-6" />
+						<Button variant="ball" class="max-md:w-full" onclick={() => book(day)}>
+							<CalendarPlus class="size-[1.125rem]" />
 							New booking
 						</Button>
 					{/snippet}
@@ -221,10 +224,10 @@
 			</Tabs.Content>
 
 			<!-- Find a booking -->
-			<Tabs.Content value="find" class="frost flex flex-col gap-4 rounded-3xl p-5 sm:p-7">
+			<Tabs.Content value="find" class="panel flex flex-col gap-4 rounded-3xl p-5 sm:p-7">
 				<div>
-					<h2 class="text-2xl font-bold">Find a booking</h2>
-					<p class="text-lg text-ink-soft">Search upcoming bookings by name or phone number.</p>
+					<h2 class="text-lg font-semibold tracking-[-0.01em]">Find a booking</h2>
+					<p class="text-base text-ink-soft">Search upcoming bookings by name or phone number.</p>
 				</div>
 				<div class="relative">
 					<Search
@@ -238,24 +241,24 @@
 					/>
 				</div>
 				{#if results.length === 0}
-					<p class="py-6 text-center text-lg text-ink-soft">No upcoming bookings found.</p>
+					<p class="py-6 text-center text-base text-ink-soft">No upcoming bookings found.</p>
 				{:else}
-					<ul class="flex flex-col divide-y divide-ice-200">
+					<ul class="flex flex-col divide-y divide-line">
 						{#each results as s (s.id)}
 							<li>
 								<button
 									type="button"
-									class="flex w-full flex-wrap items-center gap-x-4 gap-y-1 rounded-xl px-3 py-3 text-left hover:bg-white/70"
+									class="flex w-full flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl px-3 py-3 text-left hover:bg-raised"
 									onclick={() => show(s)}
 								>
 									<span class="min-w-48 flex-1">
-										<span class="flex items-center gap-2 text-lg font-bold">
+										<span class="flex items-center gap-2 text-base font-semibold">
 											{s.name}
 											{#if s.recurring}<Repeat class="size-4 text-ink-soft" />{/if}
 										</span>
 										{#if s.phone}<span class="text-ink-soft">{s.phone}</span>{/if}
 									</span>
-									<span class="text-lg font-semibold tabular-nums">
+									<span class="text-base font-semibold tabular-nums">
 										{formatLong(s.date)} · {formatRange(s.start, s.end)}
 									</span>
 								</button>
@@ -266,25 +269,27 @@
 			</Tabs.Content>
 
 			<!-- Regular bookings -->
-			<Tabs.Content value="regular" class="frost flex flex-col gap-4 rounded-3xl p-5 sm:p-7">
+			<Tabs.Content value="regular" class="panel flex flex-col gap-4 rounded-3xl p-5 sm:p-7">
 				<div class="flex flex-wrap items-end justify-between gap-3">
 					<div>
-						<h2 class="text-2xl font-bold">Regular weekly bookings</h2>
-						<p class="text-lg text-ink-soft">
+						<h2 class="text-lg font-semibold tracking-[-0.01em]">Regular weekly bookings</h2>
+						<p class="text-base text-ink-soft">
 							To add one, use “New booking” and choose “Every week”.
 						</p>
 					</div>
-					<Button onclick={() => book(data.today)}><CalendarPlus />New booking</Button>
+					<Button variant="ball" onclick={() => book(data.today)}>
+						<CalendarPlus />New booking
+					</Button>
 				</div>
 				{#if data.series.length === 0}
-					<p class="py-6 text-center text-lg text-ink-soft">No regular bookings yet.</p>
+					<p class="py-6 text-center text-base text-ink-soft">No regular bookings yet.</p>
 				{:else}
 					<ul class="flex flex-col gap-3">
 						{#each data.series as r (r.id)}
-							<li class="flex flex-col gap-3 rounded-2xl bg-white/70 p-4 sm:p-5">
+							<li class="flex flex-col gap-3 rounded-2xl border border-line bg-raised/40 p-4">
 								<div class="flex flex-wrap items-start gap-x-6 gap-y-2">
 									<div class="min-w-52 flex-1">
-										<p class="flex items-center gap-2 text-xl font-bold">
+										<p class="flex items-center gap-2 text-lg font-semibold">
 											{#if r.kind === 'block'}<Lock class="size-5" />{/if}
 											{r.name}
 										</p>
@@ -297,8 +302,8 @@
 											</a>
 										{/if}
 									</div>
-									<div class="text-lg">
-										<p class="font-bold">
+									<div class="text-base">
+										<p class="font-semibold">
 											Every {DAY_NAMES[r.weekday]}, {formatRange(r.start, r.end)}
 										</p>
 										<p class="text-ink-soft">
@@ -324,7 +329,7 @@
 									<form
 										method="POST"
 										action="?/endSeries"
-										class="flex flex-wrap items-end gap-3 rounded-xl bg-destructive/5 p-4"
+										class="flex flex-wrap items-end gap-3 rounded-2xl bg-destructive/5 p-4"
 										use:enhance={saveForm('Regular booking stopped')}
 									>
 										<input type="hidden" name="seriesId" value={r.id} />
@@ -345,14 +350,14 @@
 			</Tabs.Content>
 
 			<!-- Settings -->
-			<Tabs.Content value="settings" class="frost rounded-3xl p-5 sm:p-7">
+			<Tabs.Content value="settings" class="panel rounded-3xl p-5 sm:p-7">
 				<form
 					method="POST"
 					action="?/settings"
 					class="flex max-w-2xl flex-col gap-6"
 					use:enhance={saveForm('Settings saved')}
 				>
-					<h2 class="text-2xl font-bold">Settings</h2>
+					<h2 class="text-lg font-semibold tracking-[-0.01em]">Settings</h2>
 
 					<div class="flex flex-col gap-2">
 						<Label for="s-notice">Notice at the top of the website</Label>
@@ -427,19 +432,21 @@
 			</Tabs.Content>
 
 			<!-- Activity -->
-			<Tabs.Content value="activity" class="frost flex flex-col gap-4 rounded-3xl p-5 sm:p-7">
+			<Tabs.Content value="activity" class="panel flex flex-col gap-4 rounded-3xl p-5 sm:p-7">
 				<div>
-					<h2 class="text-2xl font-bold">Recent activity</h2>
-					<p class="text-lg text-ink-soft">Every booking, cancellation and change, newest first.</p>
+					<h2 class="text-lg font-semibold tracking-[-0.01em]">Recent activity</h2>
+					<p class="text-base text-ink-soft">
+						Every booking, cancellation and change, newest first.
+					</p>
 				</div>
 				{#if data.log.length === 0}
-					<p class="py-6 text-center text-lg text-ink-soft">Nothing yet.</p>
+					<p class="py-6 text-center text-base text-ink-soft">Nothing yet.</p>
 				{:else}
-					<ol class="flex flex-col divide-y divide-ice-200">
+					<ol class="flex flex-col divide-y divide-line">
 						{#each data.log as entry (entry.id)}
 							<li class="flex flex-wrap gap-x-4 gap-y-0.5 py-3">
 								<span class="w-44 shrink-0 text-ink-soft tabular-nums">{when(entry.at)}</span>
-								<span class="font-bold">{entry.action}</span>
+								<span class="font-semibold">{entry.action}</span>
 								<span class="min-w-0 flex-1 text-ink-soft">{entry.detail}</span>
 							</li>
 						{/each}

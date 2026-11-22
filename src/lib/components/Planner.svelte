@@ -33,6 +33,8 @@
 		onopen: (slot: Slot) => void;
 		/** Buttons beside the calendar. Gets the day currently on screen. */
 		actions?: Snippet<[ISODate]>;
+		/** Told whenever the day on screen changes, e.g. so a "Book" button elsewhere can use it. */
+		ondaychange?: (day: ISODate) => void;
 	}
 
 	let {
@@ -47,7 +49,8 @@
 		allowPast = false,
 		onpick,
 		onopen,
-		actions
+		actions,
+		ondaychange
 	}: Props = $props();
 
 	const VIEW_KEY = 'tb:view';
@@ -80,6 +83,7 @@
 		}
 	}
 	const step = $derived(oneDay ? 1 : 7);
+	$effect(() => ondaychange?.(current));
 
 	// Keep the clock ticking and pick up other people's bookings now and then.
 	let clock = $state<{ date: ISODate; minutes: number } | null>(null);
@@ -106,36 +110,8 @@
 <section class="flex flex-col gap-4" aria-label="Court calendar">
 	<!-- Toolbar -->
 	<div class="flex flex-wrap items-center gap-3">
-		<div class="flex items-center gap-2 max-md:w-full">
-			<Button
-				variant="outline"
-				size="icon-lg"
-				onclick={() => go(addDays(current, -step))}
-				aria-label={oneDay ? 'Previous day' : 'Previous week'}
-			>
-				<ChevronLeft class="size-6" />
-			</Button>
-			<Button
-				variant="outline"
-				size="lg"
-				class="px-5 max-md:flex-1"
-				onclick={() => go(liveToday)}
-				disabled={showingToday}
-			>
-				Today
-			</Button>
-			<Button
-				variant="outline"
-				size="icon-lg"
-				onclick={() => go(addDays(current, step))}
-				aria-label={oneDay ? 'Next day' : 'Next week'}
-			>
-				<ChevronRight class="size-6" />
-			</Button>
-		</div>
-
 		<h2
-			class="min-w-0 flex-1 text-2xl font-bold tracking-[-0.01em] max-md:order-first max-md:w-full max-md:flex-none"
+			class="min-w-0 flex-1 text-2xl font-semibold tracking-[-0.03em] max-md:order-first max-md:w-full max-md:flex-none"
 			aria-live="polite"
 		>
 			<span class="md:hidden">{formatLong(current)}</span>
@@ -144,33 +120,60 @@
 			</span>
 		</h2>
 
-		<div class="flex items-center gap-3 max-md:w-full">
-			<div
-				class="flex h-14 rounded-2xl bg-ice-200/70 p-1 max-md:hidden"
-				role="group"
-				aria-label="Show"
+		<div class="flex items-center gap-2 max-md:w-full">
+			<Button
+				variant="outline"
+				size="icon"
+				onclick={() => go(addDays(current, -step))}
+				aria-label={oneDay ? 'Previous day' : 'Previous week'}
 			>
-				{#each ['day', 'week'] as const as v (v)}
-					<button
-						type="button"
-						class={[
-							'h-12 rounded-xl px-5 text-lg font-bold transition-all',
-							view === v ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
-						]}
-						aria-pressed={view === v}
-						onclick={() => setView(v)}
-					>
-						{v === 'day' ? 'Day' : 'Week'}
-					</button>
-				{/each}
-			</div>
-			{@render actions?.(current)}
+				<ChevronLeft />
+			</Button>
+			<Button
+				variant="outline"
+				class="max-md:flex-1"
+				onclick={() => go(liveToday)}
+				disabled={showingToday}
+			>
+				Today
+			</Button>
+			<Button
+				variant="outline"
+				size="icon"
+				onclick={() => go(addDays(current, step))}
+				aria-label={oneDay ? 'Next day' : 'Next week'}
+			>
+				<ChevronRight />
+			</Button>
 		</div>
+
+		<div
+			class="flex h-11 rounded-full border border-line bg-surface p-1 max-md:hidden"
+			role="group"
+			aria-label="Show"
+		>
+			{#each ['day', 'week'] as const as v (v)}
+				<button
+					type="button"
+					class={[
+						'h-full rounded-full px-4 text-[0.9375rem] font-medium transition-colors',
+						view === v ? 'bg-ink text-on-ink' : 'text-ink-soft hover:text-ink'
+					]}
+					aria-pressed={view === v}
+					onclick={() => setView(v)}
+				>
+					{v === 'day' ? 'Day' : 'Week'}
+				</button>
+			{/each}
+		</div>
+		{#if actions}
+			<div class="flex items-center gap-2 max-md:w-full">{@render actions(current)}</div>
+		{/if}
 	</div>
 
 	<!-- Day picker for phones -->
 	<div
-		class="sticky top-0 z-40 -mx-4 grid grid-cols-7 gap-1.5 bg-ice-100/75 px-4 py-2 backdrop-blur-xl md:hidden"
+		class="sticky top-[4.75rem] z-30 -mx-4 grid grid-cols-7 gap-1.5 bg-page/80 px-4 py-2 backdrop-blur-xl md:hidden"
 		role="group"
 		aria-label="Choose a day"
 	>
@@ -179,30 +182,27 @@
 			<button
 				type="button"
 				class={[
-					'flex flex-col items-center gap-0.5 rounded-2xl py-2 transition-all',
-					d === current
-						? 'bg-ink text-white shadow-[0_8px_18px_-8px_oklch(0.27_0.045_250/0.7)]'
-						: 'frost text-ink'
+					'flex flex-col items-center gap-1 rounded-2xl border py-2 transition-colors',
+					d === current ? 'border-ink bg-ink text-on-ink' : 'border-line bg-surface text-ink'
 				]}
 				aria-pressed={d === current}
 				aria-label="{formatLong(d)}{n ? `, ${n} booking${n === 1 ? '' : 's'}` : ''}"
 				onclick={() => go(d)}
 			>
-				<span class="text-xs font-bold tracking-wide uppercase opacity-80">
+				<span class="text-[0.6875rem] font-medium tracking-[0.04em] uppercase opacity-60">
 					{shortDay(d).slice(0, 3)}
 				</span>
 				<span
 					class={[
-						'text-xl leading-none font-bold tabular-nums',
-						d === liveToday && d !== current && 'rounded-full bg-ball px-1.5 py-0.5'
+						'grid size-7 place-items-center rounded-full text-base leading-none font-semibold tabular-nums',
+						d === liveToday && 'bg-ball text-on-ball'
 					]}
 				>
 					{dayOfMonth(d)}
 				</span>
-				<span class="flex h-1.5 gap-0.5" aria-hidden="true">
+				<span class="flex h-1 gap-0.5" aria-hidden="true">
 					{#each Array(Math.min(n, 4)) as _, i (i)}
-						<span class={['size-1.5 rounded-full', d === current ? 'bg-ball' : 'bg-glacier/70']}
-						></span>
+						<span class={['size-1 rounded-full', d === current ? 'bg-ball' : 'bg-ball-ink']}></span>
 					{/each}
 				</span>
 			</button>
@@ -225,25 +225,22 @@
 	/>
 
 	<!-- Key -->
-	<ul class="flex flex-wrap gap-x-5 gap-y-2 px-1 text-[0.95rem] font-semibold text-ink-soft">
+	<ul class="flex flex-wrap gap-x-5 gap-y-2 px-1 text-sm text-ink-soft">
 		<li class="flex items-center gap-2">
-			<span class="h-4 w-6 rounded-md border-l-4 border-(--slot-booking-edge) bg-(--slot-booking)"
-			></span>
+			<span class="size-2.5 rounded-full bg-(--slot-booking-edge)"></span>
 			Booked
 		</li>
 		<li class="flex items-center gap-2">
-			<span class="h-4 w-6 rounded-md border-l-4 border-(--slot-regular-edge) bg-(--slot-regular)"
-			></span>
+			<span class="size-2.5 rounded-full bg-(--slot-regular-edge)"></span>
 			Regular weekly booking
 		</li>
 		<li class="flex items-center gap-2">
-			<span class="hatch h-4 w-6 rounded-md border-l-4 border-(--slot-block-edge) bg-(--slot-block)"
-			></span>
+			<span class="hatch size-2.5 rounded-full bg-(--slot-block-edge)"></span>
 			Court not available
 		</li>
 		{#if mine}
 			<li class="flex items-center gap-2">
-				<span class="h-4 w-6 rounded-md bg-(--slot-booking) ring-3 ring-ball"></span>
+				<span class="size-2.5 rounded-full ring-2 ring-ink"></span>
 				Booked on this device
 			</li>
 		{/if}

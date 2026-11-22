@@ -2,23 +2,23 @@
 	import type { Snippet } from 'svelte';
 	import favicon from '#lib/assets/favicon.svg';
 
-	let { title, subtitle, children }: { title: string; subtitle?: string; children?: Snippet } =
-		$props();
+	let {
+		title,
+		href = '/',
+		children
+	}: { title: string; href?: string; children?: Snippet } = $props();
 </script>
 
-<header class="flex flex-wrap items-center gap-4">
-	<a href="/" class="flex min-w-[16rem] flex-1 items-center gap-3.5 rounded-2xl">
-		<img
-			src={favicon}
-			alt=""
-			class="size-14 shrink-0 rounded-2xl shadow-[0_10px_24px_-12px_oklch(0.4_0.1_200/0.7)]"
-		/>
-		<span class="min-w-0">
-			<span class="block text-2xl leading-tight font-bold tracking-[-0.02em] sm:text-[2rem]">
-				{title}
-			</span>
-			{#if subtitle}<span class="block text-lg leading-snug text-ink-soft">{subtitle}</span>{/if}
-		</span>
-	</a>
-	{@render children?.()}
+<!-- A floating frosted pill that stays at the top while scrolling. -->
+<header class="sticky top-3 z-40 px-4">
+	<nav
+		class="glass mx-auto flex h-14 w-full max-w-3xl items-center gap-3 rounded-full pr-2 pl-2.5"
+		aria-label="Site"
+	>
+		<a {href} class="flex min-w-0 flex-1 items-center gap-2.5 rounded-full">
+			<img src={favicon} alt="" class="size-9 shrink-0 rounded-full" />
+			<span class="truncate text-[0.9375rem] font-semibold tracking-[-0.02em]">{title}</span>
+		</a>
+		{@render children?.()}
+	</nav>
 </header>

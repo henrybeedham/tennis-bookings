@@ -4,27 +4,27 @@
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
 
 	export const buttonVariants = tv({
-		base: "group/button inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-transparent font-semibold transition-[background-color,box-shadow,transform,color] duration-150 outline-none select-none active:not-aria-[haspopup]:translate-y-px focus-visible:ring-4 focus-visible:ring-glacier/35 disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+		base: "group/button inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent font-medium tracking-[-0.01em] transition-[background-color,border-color,color,filter] duration-150 outline-none select-none focus-visible:ring-3 focus-visible:ring-ball-ink/40 disabled:pointer-events-none disabled:opacity-40 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[1.125rem]",
 		variants: {
 			variant: {
-				default:
-					'bg-ink text-primary-foreground shadow-[inset_0_1px_0_oklch(1_0_0/0.18),0_6px_16px_-6px_oklch(0.27_0.045_250/0.6)] hover:bg-[oklch(0.33_0.055_250)]',
+				default: 'bg-ink font-semibold text-on-ink hover:bg-ink/85',
+				ball: 'bg-ball font-semibold text-on-ball hover:brightness-95',
 				outline:
-					'border-white/90 bg-white/75 text-ink shadow-[0_1px_2px_oklch(0.4_0.05_245/0.06),0_6px_16px_-10px_oklch(0.4_0.08_245/0.35)] backdrop-blur hover:bg-white aria-expanded:bg-white',
-				secondary: 'bg-ice-200/80 text-ink hover:bg-ice-300/70',
-				ghost: 'text-ink hover:bg-white/70 aria-expanded:bg-white/70',
+					'border-(--glass-line) bg-transparent text-ink hover:bg-raised aria-expanded:bg-raised',
+				secondary: 'bg-raised text-ink hover:bg-line',
+				ghost: 'text-ink-soft hover:bg-raised hover:text-ink aria-expanded:bg-raised',
 				destructive:
-					'bg-destructive text-white shadow-[inset_0_1px_0_oklch(1_0_0/0.2),0_6px_16px_-6px_oklch(0.52_0.17_27/0.6)] hover:bg-[oklch(0.47_0.17_27)] focus-visible:ring-destructive/30',
-				link: 'text-glacier underline underline-offset-4 hover:text-ink'
+					'bg-destructive font-semibold text-white hover:bg-destructive/90 focus-visible:ring-destructive/30',
+				link: 'rounded-sm text-ink underline decoration-line underline-offset-4 hover:decoration-ink'
 			},
 			size: {
-				default: 'h-12 px-5 text-base',
-				sm: "h-10 rounded-lg px-3.5 text-[0.95rem] [&_svg:not([class*='size-'])]:size-4",
-				lg: 'h-14 px-7 text-lg',
-				xl: "h-16 rounded-2xl px-8 text-xl [&_svg:not([class*='size-'])]:size-6",
-				icon: 'size-12',
-				'icon-sm': 'size-10 rounded-lg',
-				'icon-lg': 'size-14'
+				default: 'h-11 px-5 text-[0.9375rem]',
+				sm: "h-9 px-3.5 text-sm [&_svg:not([class*='size-'])]:size-4",
+				lg: 'h-12 px-6 text-base',
+				xl: 'h-13 px-7 text-base',
+				icon: 'size-11',
+				'icon-sm': 'size-9',
+				'icon-lg': 'size-12'
 			}
 		},
 		defaultVariants: {

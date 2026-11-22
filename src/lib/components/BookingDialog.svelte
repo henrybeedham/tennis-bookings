@@ -136,19 +136,22 @@
 <Dialog.Root bind:open>
 	<Dialog.Content>
 		{#if booked}
-			<div class="flex flex-col items-center gap-4 py-2 text-center">
-				<div
-					class="grid size-20 place-items-center rounded-full bg-ball shadow-[0_10px_30px_-10px_oklch(0.6_0.15_125)]"
-				>
-					<CircleCheck class="size-11 text-ink" />
+			<div class="flex flex-col gap-5">
+				<div class="flex items-center gap-3">
+					<div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-ball text-on-ball">
+						<CircleCheck class="size-5" />
+					</div>
+					<Dialog.Title>Booking confirmed</Dialog.Title>
 				</div>
-				<Dialog.Title class="pr-0 text-3xl">You’re booked!</Dialog.Title>
-				<div class="w-full rounded-2xl bg-ice-100 p-5 text-xl">
-					<p class="font-bold">{formatLong(booked.date)}</p>
-					<p class="mt-1 font-semibold tabular-nums">{formatRange(booked.start, booked.end)}</p>
-					<p class="mt-1 text-ink-soft">for {booked.name}</p>
-				</div>
-				<Dialog.Description class="text-base">
+				<dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 rounded-2xl bg-raised/60 p-4">
+					<dt class="text-sm text-ink-soft">Day</dt>
+					<dd class="font-medium">{formatLong(booked.date)}</dd>
+					<dt class="text-sm text-ink-soft">Time</dt>
+					<dd class="font-medium tabular-nums">{formatRange(booked.start, booked.end)}</dd>
+					<dt class="text-sm text-ink-soft">Name</dt>
+					<dd class="font-medium">{booked.name}</dd>
+				</dl>
+				<Dialog.Description>
 					Need to cancel? Tap your booking on the calendar and type in your phone number.
 					{#if contact}<br />{contact}{/if}
 				</Dialog.Description>
@@ -202,7 +205,7 @@
 				</div>
 
 				<fieldset class="flex flex-col gap-2">
-					<legend class="mb-2 text-base font-bold">How long?</legend>
+					<legend class="mb-2 text-sm font-medium">How long?</legend>
 					<input type="hidden" name="duration" value={duration} />
 					<div class="grid grid-cols-2 gap-2">
 						{#each durations as d (d.value)}
@@ -240,7 +243,7 @@
 					</div>
 
 					{#if custom}
-						<div class="mt-2 flex flex-col gap-2 rounded-2xl bg-ice-100 p-4">
+						<div class="mt-2 flex flex-col gap-2 rounded-2xl bg-raised/60 p-4">
 							<Label for="b-finish">Finish time</Label>
 							<TimeSelect
 								id="b-finish"
@@ -263,7 +266,7 @@
 						another.
 					</p>
 				{:else if isValidDate(date)}
-					<p class="rounded-xl bg-ice-100 px-4 py-3 text-lg font-bold tabular-nums">
+					<p class="rounded-2xl bg-raised/60 px-4 py-3 text-base font-semibold tabular-nums">
 						{formatLong(date)}, {formatRange(start, start + duration)}
 					</p>
 				{/if}
@@ -301,14 +304,20 @@
 				{#if error}
 					<p
 						role="alert"
-						class="flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-lg font-semibold text-destructive"
+						class="flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-base font-semibold text-destructive"
 					>
 						<TriangleAlert class="mt-1 size-5 shrink-0" />
 						{error}
 					</p>
 				{/if}
 
-				<Button type="submit" size="xl" class="w-full" disabled={busy || !!clash || past}>
+				<Button
+					type="submit"
+					variant="ball"
+					size="xl"
+					class="w-full"
+					disabled={busy || !!clash || past}
+				>
 					{busy ? 'Booking…' : 'Book the court'}
 				</Button>
 			</form>
@@ -319,29 +328,30 @@
 <style>
 	.choice {
 		display: flex;
-		height: 3.25rem;
+		height: 2.875rem;
 		align-items: center;
 		justify-content: center;
-		border-radius: var(--radius-xl);
+		border-radius: 9999px;
 		border: 1px solid var(--input);
-		background: oklch(1 0 0 / 0.85);
-		font-size: 1.125rem;
-		font-weight: 700;
+		font-size: 0.9375rem;
+		font-weight: 500;
 		color: var(--ink);
 		cursor: pointer;
-		transition: all 150ms;
+		transition:
+			background-color 150ms,
+			border-color 150ms;
 	}
 	.choice:hover {
-		border-color: var(--glacier);
+		border-color: color-mix(in oklch, var(--ink) 40%, transparent);
 	}
 	.choice:has(:focus-visible) {
-		outline: 3px solid var(--glacier);
+		outline: 2px solid var(--ball-ink);
 		outline-offset: 2px;
 	}
 	.choice.chosen {
-		border-color: var(--ink);
-		background: var(--ink);
-		color: white;
-		box-shadow: 0 6px 16px -8px oklch(0.27 0.045 250 / 0.8);
+		border-color: var(--ball);
+		background: var(--ball);
+		color: var(--on-ball);
+		font-weight: 600;
 	}
 </style>

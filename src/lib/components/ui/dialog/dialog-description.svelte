@@ -12,6 +12,6 @@
 <DialogPrimitive.Description
 	bind:ref
 	data-slot="dialog-description"
-	class={cn('text-lg leading-snug text-ink-soft', className)}
+	class={cn('text-[0.9375rem] leading-relaxed text-ink-soft', className)}
 	{...restProps}
 />

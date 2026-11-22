@@ -2,10 +2,10 @@
 	import { tv, type VariantProps } from 'tailwind-variants';
 
 	export const tabsListVariants = tv({
-		base: 'group/tabs-list inline-flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-2xl p-1.5 text-ink-soft',
+		base: 'group/tabs-list inline-flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 text-ink-soft',
 		variants: {
 			variant: {
-				default: 'frost',
+				default: 'border border-line bg-surface',
 				line: 'gap-1 bg-transparent'
 			}
 		},

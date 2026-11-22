@@ -12,7 +12,7 @@
 <CalendarPrimitive.HeadCell
 	bind:ref
 	class={cn(
-		'w-(--cell-size) pb-1 text-sm font-bold tracking-wide text-ink-soft uppercase',
+		'w-(--cell-size) pb-1 text-xs font-medium tracking-[0.06em] text-ink-soft uppercase',
 		className
 	)}
 	{...restProps}

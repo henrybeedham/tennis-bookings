@@ -14,28 +14,28 @@
 	position="top-center"
 	richColors={false}
 	class="toaster group"
-	style="--normal-bg: oklch(0.995 0.003 225 / 0.95); --normal-text: var(--ink); --normal-border: white; --border-radius: var(--radius-xl); --width: 24rem;"
+	style="--normal-bg: var(--surface); --normal-text: var(--ink); --normal-border: var(--line); --border-radius: var(--radius-xl); --width: 24rem;"
 	toastOptions={{
 		classes: {
 			toast:
-				'!gap-3 !text-lg !font-semibold !p-5 !shadow-[0_20px_50px_-20px_oklch(0.3_0.08_245/0.5)] backdrop-blur-xl'
+				'!gap-3 !text-[0.9375rem] !font-medium !px-4 !py-3.5 !shadow-[0_0_0_1px_oklch(0.3_0.03_250/0.06),0_12px_32px_-12px_oklch(0.25_0.05_250/0.35)] backdrop-blur-xl'
 		}
 	}}
 	{...restProps}
 >
 	{#snippet loadingIcon()}
-		<Loader2Icon class="size-6 animate-spin" />
+		<Loader2Icon class="size-5 animate-spin" />
 	{/snippet}
 	{#snippet successIcon()}
-		<CircleCheckIcon class="size-6 text-ball-deep" />
+		<CircleCheckIcon class="size-5 text-ball-ink" />
 	{/snippet}
 	{#snippet errorIcon()}
-		<OctagonXIcon class="size-6" />
+		<OctagonXIcon class="size-5 text-destructive" />
 	{/snippet}
 	{#snippet infoIcon()}
-		<InfoIcon class="size-6" />
+		<InfoIcon class="size-5" />
 	{/snippet}
 	{#snippet warningIcon()}
-		<TriangleAlertIcon class="size-6" />
+		<TriangleAlertIcon class="size-5" />
 	{/snippet}
 </Sonner>

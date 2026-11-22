@@ -19,10 +19,14 @@
 	let bookDate = $state<ISODate>('');
 	let bookStart = $state(0);
 
+	/** The day showing on the calendar, used by the Book buttons. */
+	let day = $state<ISODate>('');
+
 	let slotOpen = $state(false);
 	let selected = $state<Slot | null>(null);
 
 	function book(date: ISODate, start?: number) {
+		date ||= data.focus;
 		bookDate = date < data.today ? data.today : date;
 		bookStart =
 			start ?? firstFreeStart(data.slots, bookDate, data.today, data.nowMinutes, s.open, s.close);
@@ -40,9 +44,14 @@
 	<meta name="description" content="Book the {s.title}. Tap a free time on the calendar." />
 </svelte:head>
 
-<div class="mx-auto flex max-w-7xl flex-col gap-5 px-4 pt-5 pb-10 sm:gap-6 sm:px-6 sm:pt-8">
-	<SiteHeader title={s.title} subtitle="Tap a free time on the calendar to book the court." />
+<SiteHeader title={s.title}>
+	<Button variant="ball" size="sm" class="h-10 px-4" onclick={() => book(day)}>
+		<CalendarPlus />
+		<span>Book<span class="max-sm:hidden"> the court</span></span>
+	</Button>
+</SiteHeader>
 
+<div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 pt-8 pb-12 sm:px-6 sm:pt-10">
 	{#if s.notice}<Notice text={s.notice} />{/if}
 
 	<Planner
@@ -56,41 +65,36 @@
 		mine={device.mine}
 		onpick={book}
 		onopen={show}
-	>
-		{#snippet actions(day)}
-			<Button size="lg" class="max-md:w-full" onclick={() => book(day)}>
-				<CalendarPlus class="size-6" />
-				Book the court
-			</Button>
-		{/snippet}
-	</Planner>
+		ondaychange={(d) => (day = d)}
+	/>
 
-	<footer class="frost grid gap-6 rounded-3xl p-5 sm:grid-cols-[1.4fr_1fr] sm:p-7">
+	<footer class="grid gap-8 border-t border-line px-1 pt-8 text-[0.9375rem] sm:grid-cols-3">
 		<div>
-			<h2 class="text-xl font-bold">How to book</h2>
-			<ol class="mt-3 flex flex-col gap-3 text-lg">
-				{#each ['Tap a free time on the calendar, or the “Book the court” button.', 'Choose how long, then enter your name and phone number.', 'That’s it! The time is yours. Get the key as usual.'] as step, i (i)}
+			<h2 class="text-sm font-semibold">How to book</h2>
+			<ol class="mt-3 flex flex-col gap-2 text-ink-soft">
+				{#each ['Tap a free time on the calendar, or “Book the court”.', 'Choose how long, then enter your name and phone number.', 'The time is yours. Get the key as usual.'] as step, i (i)}
 					<li class="flex gap-3">
-						<span class="grid size-8 shrink-0 place-items-center rounded-full bg-ice-200 font-bold">
-							{i + 1}
-						</span>
-						<span class="pt-0.5">{step}</span>
+						<span class="w-4 shrink-0 font-medium text-ink tabular-nums">{i + 1}</span>
+						<span>{step}</span>
 					</li>
 				{/each}
 			</ol>
 		</div>
-		<div class="flex flex-col gap-3 text-lg">
-			<h2 class="text-xl font-bold">Need help?</h2>
-			<p>
+		<div>
+			<h2 class="text-sm font-semibold">Cancelling</h2>
+			<p class="mt-3 text-ink-soft">
+				Tap your booking on the calendar and type in the phone number you booked with.
+			</p>
+		</div>
+		<div>
+			<h2 class="text-sm font-semibold">Need help?</h2>
+			<p class="mt-3 text-ink-soft">
 				{s.contact ||
 					'Can’t use the website? Pop into the post office and they’ll book the court for you.'}
 			</p>
-			<p class="text-base text-ink-soft">
-				To cancel, tap your booking and type in your phone number.
-			</p>
 			<a
 				href="/post-office"
-				class="mt-auto self-start text-base text-ink-soft underline underline-offset-4 hover:text-ink"
+				class="mt-4 inline-block text-sm text-ink-soft underline decoration-line underline-offset-4 hover:text-ink"
 			>
 				Post office login
 			</a>

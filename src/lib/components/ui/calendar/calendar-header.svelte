@@ -12,7 +12,7 @@
 <CalendarPrimitive.Header
 	bind:ref
 	class={cn(
-		'flex h-(--cell-size) w-full items-center justify-center gap-1.5 text-xl font-bold',
+		'flex h-(--cell-size) w-full items-center justify-center gap-1.5 text-base font-semibold tracking-[-0.01em]',
 		className
 	)}
 	{...restProps}

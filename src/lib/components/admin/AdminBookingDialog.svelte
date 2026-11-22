@@ -157,7 +157,7 @@
 			/>
 
 			{#if repeat === 'weekly'}
-				<div class="flex flex-col gap-2 rounded-2xl bg-ice-100 p-4">
+				<div class="flex flex-col gap-2 rounded-2xl bg-raised/60 p-4">
 					<Label for="a-until">Last week (optional)</Label>
 					<DatePicker
 						id="a-until"
@@ -208,7 +208,7 @@
 			{#if error}
 				<p
 					role="alert"
-					class="flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-lg font-semibold text-destructive"
+					class="flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-base font-semibold text-destructive"
 				>
 					<TriangleAlert class="mt-1 size-5 shrink-0" />
 					{error}

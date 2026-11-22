@@ -44,18 +44,18 @@
 	<Dialog.Content>
 		{#if slot}
 			<Dialog.Header>
-				<p class="text-base font-bold tracking-wide text-ink-soft uppercase">
+				<p class="text-xs font-medium tracking-[0.08em] text-ink-soft uppercase">
 					{slot.kind === 'block' ? 'Court blocked out' : 'Booking'}
 				</p>
-				<Dialog.Title class="text-3xl">{slot.name}</Dialog.Title>
+				<Dialog.Title class="text-2xl">{slot.name}</Dialog.Title>
 			</Dialog.Header>
 
-			<div class="flex flex-col gap-1 rounded-2xl bg-ice-100 p-5 text-lg">
-				<p class="text-xl font-bold">{formatLong(slot.date, true)}</p>
-				<p class="text-xl font-semibold tabular-nums">{formatRange(slot.start, slot.end)}</p>
+			<div class="flex flex-col gap-1 rounded-2xl bg-raised/60 p-4 text-base">
+				<p class="text-lg font-semibold">{formatLong(slot.date, true)}</p>
+				<p class="text-lg font-semibold tabular-nums">{formatRange(slot.start, slot.end)}</p>
 				{#if slot.recurring}
 					<p
-						class="mt-2 inline-flex items-center gap-2 self-start rounded-full bg-(--slot-regular) px-3 py-1 font-bold"
+						class="mt-2 inline-flex items-center gap-2 self-start rounded-md bg-(--slot-regular) px-2 py-0.5 text-sm font-medium"
 					>
 						<Repeat class="size-4" /> Every {DAY_NAMES[weekday(slot.date)]}
 					</p>
@@ -63,7 +63,7 @@
 				{#if slot.phone}
 					<a
 						href="tel:{slot.phone}"
-						class="mt-2 inline-flex items-center gap-2 font-bold text-glacier underline underline-offset-4"
+						class="mt-2 inline-flex items-center gap-2 font-semibold text-ink underline decoration-ball underline-offset-4"
 					>
 						<Phone class="size-5" />
 						{slot.phone}
@@ -87,7 +87,7 @@
 				<form
 					method="POST"
 					action={actionUrl('cancel')}
-					class="flex flex-col gap-4 rounded-2xl border border-destructive/25 bg-destructive/5 p-5"
+					class="flex flex-col gap-4 rounded-2xl border border-destructive/25 bg-destructive/5 p-4"
 					use:enhance={() => {
 						busy = true;
 						error = '';
@@ -109,7 +109,7 @@
 					<input type="hidden" name="scope" value={confirming} />
 					<input type="hidden" name="seriesId" value={slot.seriesId ?? ''} />
 					<input type="hidden" name="date" value={slot.date} />
-					<p class="text-lg font-semibold">{confirmText(slot, confirming)}</p>
+					<p class="text-base font-semibold">{confirmText(slot, confirming)}</p>
 					{#if error}
 						<p role="alert" class="flex items-start gap-2 font-semibold text-destructive">
 							<TriangleAlert class="mt-1 size-5 shrink-0" />{error}

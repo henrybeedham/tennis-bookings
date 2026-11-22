@@ -13,7 +13,8 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<meta name="theme-color" content="#eaf2f8" />
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#edf2f8" />
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#12161f" />
 </svelte:head>
 
 <Toaster />

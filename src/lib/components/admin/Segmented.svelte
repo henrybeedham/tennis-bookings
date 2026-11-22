@@ -7,9 +7,9 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<span class="text-base font-bold">{label}</span>
+	<span class="text-sm font-medium">{label}</span>
 	<div
-		class="grid auto-cols-fr grid-flow-col gap-1 rounded-xl bg-ice-200/70 p-1"
+		class="grid auto-cols-fr grid-flow-col gap-1 rounded-full bg-raised p-1"
 		role="radiogroup"
 		aria-label={label}
 	>
@@ -19,8 +19,8 @@
 				role="radio"
 				aria-checked={value === o.value}
 				class={[
-					'h-11 rounded-lg px-3 font-bold transition-all',
-					value === o.value ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
+					'h-10 rounded-full px-3 text-[0.9375rem] font-medium transition-all',
+					value === o.value ? 'bg-ink text-on-ink' : 'text-ink-soft hover:text-ink'
 				]}
 				onclick={() => (value = o.value)}
 			>
