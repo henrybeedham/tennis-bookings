@@ -68,7 +68,7 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<SiteHeader title={s.title}>
+<SiteHeader title={s.title} secret="/post-office">
 	{#if data.admin}
 		<Button
 			variant="ghost"

@@ -94,6 +94,10 @@
 		if (allowPast) return false;
 		return date < today || (date === today && m + 30 <= nowMinutes);
 	}
+	/** Is this half hour under a booking or block? Those cells sit behind the slot, so aren't bookable. */
+	function isTaken(date: ISODate, m: number) {
+		return (byDay.get(date) ?? []).some((s) => s.start < m + 30 && s.end > m);
+	}
 	function isOpen(m: number) {
 		return m >= open && m < close;
 	}
@@ -201,6 +205,7 @@
 					{#each halves as m (m)}
 						{@const past = isPast(d, m)}
 						{@const available = isOpen(m)}
+						{@const taken = isTaken(d, m)}
 						<button
 							type="button"
 							class={[
@@ -209,13 +214,14 @@
 								m % 60 === 0 ? 'border-grid' : 'border-dashed border-grid/50',
 								past || !available
 									? 'bg-ink/[0.03]'
-									: 'hover:bg-ball/15 focus-visible:bg-ball/15 focus-visible:outline-offset-[-2px]'
+									: !taken &&
+										'hover:bg-ball/15 focus-visible:bg-ball/15 focus-visible:outline-offset-[-2px]'
 							]}
-							disabled={past || !available}
+							disabled={past || !available || taken}
 							onclick={() => onpick(d, m)}
 							aria-label="Book {formatLong(d)} at {formatTime(m)}"
 						>
-							{#if !past && available}
+							{#if !past && available && !taken}
 								<span
 									class="flex items-center gap-1 text-ball-ink opacity-0 transition-opacity group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100"
 								>

@@ -28,6 +28,8 @@
 		start: number;
 		openTime: number;
 		closeTime: number;
+		/** Start on "Every week" instead of "Once". */
+		weekly?: boolean;
 	}
 
 	let {
@@ -35,7 +37,8 @@
 		date: initialDate,
 		start: initialStart,
 		openTime,
-		closeTime
+		closeTime,
+		weekly = false
 	}: Props = $props();
 
 	let kind = $state<'booking' | 'block'>('booking');
@@ -54,7 +57,7 @@
 		if (!open) return;
 		untrack(() => {
 			kind = 'booking';
-			repeat = 'once';
+			repeat = weekly ? 'weekly' : 'once';
 			date = initialDate;
 			start = initialStart;
 			end = Math.min(initialStart + 60, closeTime);

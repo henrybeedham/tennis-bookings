@@ -73,12 +73,6 @@
 				<CalendarPlus />
 				Book the court
 			</Button>
-			<a
-				href="/post-office"
-				class="self-center rounded-sm text-sm text-ink-soft underline decoration-line underline-offset-4 hover:text-ink"
-			>
-				Post office login
-			</a>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>

@@ -42,6 +42,7 @@
 	let bookOpen = $state(false);
 	let bookDate = $state<ISODate>('');
 	let bookStart = $state(0);
+	let bookWeekly = $state(false);
 	let slotOpen = $state(false);
 	let selected = $state<AdminSlot | null>(null);
 	const TABS = ['calendar', 'find', 'regular', 'settings', 'activity'];
@@ -53,8 +54,9 @@
 	let stopFrom = $state('');
 	let saving = $state(false);
 
-	function book(date: ISODate, start?: number) {
+	function book(date: ISODate, start?: number, weekly = false) {
 		if (!data.admin) return;
+		bookWeekly = weekly;
 		bookDate = date;
 		bookStart =
 			start ??
@@ -283,7 +285,7 @@
 							To add one, use “New booking” and choose “Every week”.
 						</p>
 					</div>
-					<Button variant="ball" onclick={() => book(data.today)}>
+					<Button variant="ball" onclick={() => book(data.today, undefined, true)}>
 						<CalendarPlus />New booking
 					</Button>
 				</div>
@@ -468,6 +470,7 @@
 		start={bookStart}
 		openTime={data.settings.open}
 		closeTime={data.settings.close}
+		weekly={bookWeekly}
 	/>
 	<AdminSlotDialog bind:open={slotOpen} slot={selected} />
 {/if}
