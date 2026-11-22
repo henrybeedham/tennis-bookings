@@ -10,6 +10,7 @@
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { Textarea } from '#lib/components/ui/textarea/index.js';
 	import TimeSelect from '../TimeSelect.svelte';
+	import DatePicker from '#lib/components/DatePicker.svelte';
 	import Segmented from './Segmented.svelte';
 	import {
 		DAY_NAMES,
@@ -129,10 +130,7 @@
 
 			<div class="flex flex-col gap-2">
 				<Label for="a-date">{repeat === 'weekly' ? 'First week' : 'Day'}</Label>
-				<Input id="a-date" name="date" type="date" bind:value={date} required />
-				{#if isValidDate(date)}<p class="font-semibold text-ink-soft">
-						{formatLong(date, true)}
-					</p>{/if}
+				<DatePicker id="a-date" name="date" bind:value={date} required />
 			</div>
 
 			<div class="grid grid-cols-2 gap-3">
@@ -161,7 +159,14 @@
 			{#if repeat === 'weekly'}
 				<div class="flex flex-col gap-2 rounded-2xl bg-ice-100 p-4">
 					<Label for="a-until">Last week (optional)</Label>
-					<Input id="a-until" name="until" type="date" min={date} bind:value={until} />
+					<DatePicker
+						id="a-until"
+						name="until"
+						min={date}
+						bind:value={until}
+						shortcuts={false}
+						placeholder="No end date"
+					/>
 					<p class="text-[0.95rem] text-ink-soft">
 						Leave empty to carry on until you stop it. Weeks that are already booked will be
 						skipped.

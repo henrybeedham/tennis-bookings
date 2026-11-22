@@ -415,8 +415,8 @@ export function cancelSlot(id: string, opts: { admin: boolean; phone?: unknown }
 			);
 		}
 		const now = nowUK();
-		if (slot.date < now.date || (slot.date === now.date && slot.start <= now.minutes)) {
-			throw new BookingError('This booking has already started, so it can’t be cancelled.');
+		if (slot.date < now.date || (slot.date === now.date && slot.end <= now.minutes)) {
+			throw new BookingError('This booking has already finished.');
 		}
 		const phone = normalisePhone(opts.phone);
 		if (!phone || phone !== slot.phone) {

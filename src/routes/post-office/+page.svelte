@@ -19,6 +19,7 @@
 	import Notice from '#lib/components/Notice.svelte';
 	import Planner from '#lib/components/Planner.svelte';
 	import TimeSelect from '#lib/components/TimeSelect.svelte';
+	import DatePicker from '#lib/components/DatePicker.svelte';
 	import AdminBookingDialog from '#lib/components/admin/AdminBookingDialog.svelte';
 	import AdminSlotDialog from '#lib/components/admin/AdminSlotDialog.svelte';
 	import { firstFreeStart } from '#lib/slots.js';
@@ -320,13 +321,7 @@
 										<input type="hidden" name="seriesId" value={r.id} />
 										<div class="flex min-w-56 flex-1 flex-col gap-2">
 											<Label for="stop-{r.id}">No more bookings from</Label>
-											<Input
-												id="stop-{r.id}"
-												name="from"
-												type="date"
-												bind:value={stopFrom}
-												required
-											/>
+											<DatePicker id="stop-{r.id}" name="from" bind:value={stopFrom} required />
 										</div>
 										<Button variant="outline" onclick={() => (stopping = null)}>Keep it</Button>
 										<Button type="submit" variant="destructive" disabled={saving}>

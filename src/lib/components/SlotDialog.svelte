@@ -87,14 +87,18 @@
 				</Dialog.Description>
 			{:else if finished}
 				<Dialog.Description>This booking has finished.</Dialog.Description>
-			{:else if started}
-				<Dialog.Description>This booking is happening now.</Dialog.Description>
 			{:else if !slot.cancellable}
 				<Dialog.Description>
 					This was booked at the post office. To change or cancel it, please ask them.
 					{#if contact}<br />{contact}{/if}
 				</Dialog.Description>
 			{:else if step === 'view'}
+				{#if started}
+					<Dialog.Description>
+						This booking is happening now. If you’ve finished early, you can cancel it to free up
+						the court.
+					</Dialog.Description>
+				{/if}
 				<Button variant="outline" size="lg" class="w-full" onclick={() => (step = 'confirm')}>
 					Cancel this booking
 				</Button>
@@ -123,7 +127,10 @@
 				>
 					<input type="hidden" name="id" value={slot.id} />
 					<p class="text-lg font-semibold">
-						{#if slot.recurring}
+						{#if started}
+							This frees the court for the rest of the time. Type the phone number used to make the
+							booking.
+						{:else if slot.recurring}
 							This cancels {formatLong(slot.date)} only. The regular booking carries on in other weeks.
 						{:else}
 							To cancel, type the phone number used to make the booking.

@@ -9,6 +9,7 @@
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import TimeSelect from './TimeSelect.svelte';
+	import DatePicker from '#lib/components/DatePicker.svelte';
 	import { device } from '#lib/device.svelte.js';
 	import {
 		addDays,
@@ -187,18 +188,14 @@
 			>
 				<div class="flex flex-col gap-2">
 					<Label for="b-date">Day</Label>
-					<Input
+					<DatePicker
 						id="b-date"
 						name="date"
-						type="date"
 						min={today}
 						max={maxDate}
 						bind:value={date}
 						required
 					/>
-					{#if isValidDate(date)}
-						<p class="text-base font-semibold text-ink-soft">{formatLong(date, true)}</p>
-					{/if}
 				</div>
 
 				<div class="flex flex-col gap-2">
