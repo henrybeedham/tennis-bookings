@@ -98,10 +98,9 @@
 		return m >= open && m < close;
 	}
 
-	/** Hidden columns: in day view everything but the chosen day; on phones too. */
+	/** In day view, only the chosen day's column is shown. */
 	function columnClass(d: ISODate) {
-		if (d === focus) return '';
-		return view === 'day' ? 'hidden' : 'max-md:hidden';
+		return view === 'day' && d !== focus ? 'hidden' : '';
 	}
 
 	function slotTone(s: Slot) {
@@ -111,14 +110,19 @@
 </script>
 
 <div
-	class={['panel overflow-clip rounded-3xl', fit && 'md:flex md:min-h-0 md:flex-1 md:flex-col']}
-	style="--hour: 4.25rem; --min-hour: 2.2rem; --gutter: 4rem; --hours: {hours.length};"
+	class={[
+		'panel overflow-clip rounded-3xl [--gutter:2.75rem] md:[--gutter:4rem]',
+		fit && 'md:flex md:min-h-0 md:flex-1 md:flex-col'
+	]}
+	style="--hour: 4.25rem; --min-hour: 2.2rem; --hours: {hours.length};"
 >
 	<!-- Day headings -->
 	<div
 		class={[
-			'z-20 flex shrink-0 border-b border-line bg-surface max-md:hidden',
-			!fit && 'sticky top-(--nav-offset)',
+			'z-20 flex shrink-0 border-b border-line bg-surface',
+			// Phones in day view have the day picker instead.
+			view === 'day' && 'max-md:hidden',
+			fit ? 'max-md:sticky max-md:top-(--nav-offset)' : 'sticky top-(--nav-offset)',
 			// Leave room for the grid's scrollbar so the columns line up.
 			(fit || long) && '[scrollbar-gutter:stable] overflow-y-hidden'
 		]}
@@ -127,17 +131,19 @@
 		<div class="w-(--gutter) shrink-0"></div>
 		{#each days as d (d)}
 			<div
-				class="flex min-w-0 flex-1 items-center justify-center gap-2 border-l border-grid px-2 py-2 {columnClass(
+				class="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 border-l border-grid px-0.5 py-1.5 md:flex-row md:gap-2 md:px-2 md:py-2 {columnClass(
 					d
 				)}"
 			>
-				<span class="text-xs font-medium tracking-[0.06em] text-ink-soft uppercase">
+				<span
+					class="text-[0.625rem] font-medium tracking-[0.04em] text-ink-soft uppercase md:text-xs md:tracking-[0.06em]"
+				>
 					<span class="lg:hidden">{shortDay(d)}</span>
 					<span class="max-lg:hidden">{dayName(d)}</span>
 				</span>
 				<span
 					class={[
-						'grid size-8 place-items-center rounded-full text-base font-semibold tracking-[-0.01em] tabular-nums',
+						'grid size-7 place-items-center rounded-full text-sm font-semibold tracking-[-0.01em] tabular-nums md:size-8 md:text-base',
 						d === today ? 'bg-ball text-on-ball' : 'text-ink'
 					]}
 				>
@@ -173,7 +179,7 @@
 					<div class="relative min-h-0 flex-1">
 						<span
 							class={[
-								'absolute -top-[0.7em] right-3 text-xs font-medium text-ink-soft tabular-nums'
+								'absolute -top-[0.7em] right-1.5 text-[0.6875rem] font-medium text-ink-soft tabular-nums md:right-3 md:text-xs'
 							]}
 						>
 							{formatTime(h)}
@@ -218,7 +224,7 @@
 						<button
 							type="button"
 							class={[
-								'slot absolute inset-x-1 z-10 flex min-w-0 flex-col overflow-hidden rounded-xl px-2.5 text-left',
+								'slot absolute inset-x-1 z-10 flex min-w-0 flex-col overflow-hidden rounded-lg px-1 text-left md:rounded-xl md:px-2.5',
 								'transition-[filter] hover:brightness-[0.97] dark:hover:brightness-125',
 								short ? 'justify-center py-0' : 'py-1.5',
 								slotTone(s),
@@ -233,7 +239,7 @@
 						>
 							{#if short}
 								<span class="flex min-w-0 items-center gap-1.5 text-[0.8125rem] leading-tight">
-									<span class="shrink-0 font-medium text-ink-soft tabular-nums">
+									<span class="slot-time shrink-0 font-medium text-ink-soft tabular-nums">
 										{formatTime(s.start)}
 									</span>
 									<span class="truncate font-semibold">{s.name}</span>
@@ -242,7 +248,7 @@
 								<span
 									class="slot-compact min-w-0 items-center gap-1.5 text-[0.8125rem] leading-tight"
 								>
-									<span class="shrink-0 font-medium text-ink-soft tabular-nums">
+									<span class="slot-time shrink-0 font-medium text-ink-soft tabular-nums">
 										{formatTime(s.start)}
 									</span>
 									<span class="truncate font-semibold">{s.name}</span>
@@ -257,7 +263,7 @@
 										/>{/if}
 								</span>
 								<span
-									class="slot-full text-[0.8125rem] leading-snug font-medium text-ink-soft tabular-nums"
+									class="slot-full slot-time truncate text-[0.8125rem] leading-snug font-medium text-ink-soft tabular-nums"
 								>
 									{formatRange(s.start, s.end)}
 								</span>
@@ -304,6 +310,16 @@
 		}
 		.slot-compact {
 			display: flex;
+		}
+	}
+	/* Narrow columns (a week on a phone): just the name, smaller. Tap for the details. */
+	@container (max-width: 5.5rem) {
+		.slot-time,
+		.slot :global(svg) {
+			display: none !important;
+		}
+		.slot > span {
+			font-size: 0.6875rem;
 		}
 	}
 </style>

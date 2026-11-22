@@ -73,9 +73,10 @@
 	let current = $derived(focus);
 
 	const wide = new MediaQuery('min-width: 768px', false);
-	const oneDay = $derived(view === 'day' || (view === 'week' && !wide.current));
+	const oneDay = $derived(view === 'day');
 	/** What's actually on screen: phones show a single day instead of a week. */
-	const shown = $derived<View>(view === 'month' ? 'month' : oneDay ? 'day' : 'week');
+	// Phones get Day and Week; a month grid is too cramped, so it shows that week instead.
+	const shown = $derived<View>(view === 'month' && !wide.current ? 'week' : view);
 
 	const days = $derived(weekDates(current));
 	const grid = $derived(monthGrid(current));
@@ -171,7 +172,7 @@
 			</Button>
 		</div>
 
-		<!-- Phones get Day and Month; a week doesn't fit. -->
+		<!-- Phones get Day and Week; a month doesn't fit. -->
 		<div
 			class="flex h-11 rounded-full border border-line bg-surface p-1"
 			role="group"
@@ -183,7 +184,7 @@
 					class={[
 						'h-full rounded-full px-4 text-[0.9375rem] font-medium transition-colors max-sm:px-3',
 						shown === v ? 'bg-ink text-on-ink' : 'text-ink-soft hover:text-ink',
-						v === 'week' && 'max-md:hidden'
+						v === 'month' && 'max-md:hidden'
 					]}
 					aria-pressed={shown === v}
 					onclick={() => shown !== v && setView(v)}
@@ -256,7 +257,7 @@
 		<Calendar
 			{days}
 			focus={current}
-			view={oneDay ? 'day' : 'week'}
+			view={shown === 'day' ? 'day' : 'week'}
 			{slots}
 			{open}
 			{close}
