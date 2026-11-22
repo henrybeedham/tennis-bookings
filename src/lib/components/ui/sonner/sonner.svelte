@@ -14,7 +14,7 @@
 	position="top-center"
 	richColors={false}
 	class="toaster group"
-	style="--normal-bg: oklch(0.995 0.003 225 / 0.95); --normal-text: var(--ink); --normal-border: white; --border-radius: 1rem; --width: 24rem;"
+	style="--normal-bg: oklch(0.995 0.003 225 / 0.95); --normal-text: var(--ink); --normal-border: white; --border-radius: var(--radius-xl); --width: 24rem;"
 	toastOptions={{
 		classes: {
 			toast:

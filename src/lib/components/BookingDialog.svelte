@@ -322,7 +322,7 @@
 		height: 3.25rem;
 		align-items: center;
 		justify-content: center;
-		border-radius: 0.875rem;
+		border-radius: var(--radius-xl);
 		border: 1px solid var(--input);
 		background: oklch(1 0 0 / 0.85);
 		font-size: 1.125rem;

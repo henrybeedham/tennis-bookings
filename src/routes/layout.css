@@ -10,7 +10,7 @@
  */
 
 :root {
-	--radius: 0.875rem;
+	--radius: 0.5rem;
 
 	--ink: oklch(0.27 0.045 250);
 	--ink-soft: oklch(0.45 0.035 245);
@@ -81,9 +81,9 @@
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
 	--radius-lg: var(--radius);
-	--radius-xl: calc(var(--radius) * 1.4);
-	--radius-2xl: calc(var(--radius) * 1.8);
-	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-xl: calc(var(--radius) * 1.25);
+	--radius-2xl: calc(var(--radius) * 1.5);
+	--radius-3xl: calc(var(--radius) * 1.75);
 }
 
 @layer base {
@@ -91,8 +91,8 @@
 		@apply border-border outline-ring/50;
 	}
 	html {
-		/* Everything is a little bigger than usual. Sizes are in rem so the browser's text size setting still works. */
-		font-size: 112.5%;
+		/* Sizes are in rem so the browser's text size setting still works. */
+		font-size: 100%;
 		@apply font-sans antialiased;
 		-webkit-text-size-adjust: 100%;
 	}
@@ -104,16 +104,6 @@
 			radial-gradient(50rem 40rem at 100% 10%, oklch(0.93 0.035 260 / 0.8), transparent 60%),
 			radial-gradient(60rem 50rem at 50% 110%, oklch(0.95 0.03 190 / 0.9), transparent 60%);
 		background-attachment: fixed;
-	}
-	/* Faint court lines behind everything. */
-	body::before {
-		content: '';
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		pointer-events: none;
-		opacity: 0.5;
-		background: url('../lib/assets/court-lines.svg') center 30% / min(110rem, 180vw) auto no-repeat;
 	}
 	button:not(:disabled),
 	[role='button']:not(:disabled) {

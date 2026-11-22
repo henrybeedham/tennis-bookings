@@ -62,7 +62,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 	bind:placeholder
 	{weekdayFormat}
 	{disableDaysOutsideMonth}
-	class={cn('group/calendar text-ink [--cell-radius:0.875rem] [--cell-size:3rem]', className)}
+	class={cn('group/calendar text-ink [--cell-radius:var(--radius-lg)] [--cell-size:3rem]', className)}
 	{locale}
 	{monthFormat}
 	{yearFormat}
