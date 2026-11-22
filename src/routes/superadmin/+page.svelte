@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
+	import History from '@lucide/svelte/icons/history';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Trash from '@lucide/svelte/icons/trash-2';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -15,6 +16,7 @@
 
 	/** The address waiting for "Yes, delete" to be pressed. */
 	let confirming = $state<string | null>(null);
+	let confirmingLog = $state(false);
 	let busy = $state(false);
 
 	function when(at: string) {
@@ -156,5 +158,57 @@
 				{/each}
 			</ul>
 		{/if}
+
+		<section class="panel mt-6 flex flex-col gap-4 rounded-3xl p-5 sm:p-7">
+			<div class="flex flex-wrap items-start gap-x-6 gap-y-3">
+				<div class="min-w-52 flex-1">
+					<h2 class="flex items-center gap-2 text-lg font-semibold tracking-[-0.01em]">
+						<History class="size-5" />Post office activity
+					</h2>
+					<p class="text-base text-ink-soft">
+						The list of every booking, cancellation and change on the post office’s Activity tab. It
+						has {data.logCount} entr{data.logCount === 1 ? 'y' : 'ies'}. Clearing it doesn’t change
+						any bookings.
+					</p>
+				</div>
+				{#if !confirmingLog}
+					<Button
+						variant="outline"
+						class="text-destructive"
+						disabled={data.logCount === 0}
+						onclick={() => (confirmingLog = true)}
+					>
+						<Trash />Clear activity…
+					</Button>
+				{/if}
+			</div>
+
+			{#if confirmingLog}
+				<form
+					method="POST"
+					action="?/clearLog"
+					class="flex flex-wrap items-center gap-3 rounded-2xl border border-destructive/40 p-4"
+					use:enhance={() => {
+						busy = true;
+						return async ({ result, update }) => {
+							busy = false;
+							if (result.type === 'success') {
+								toast.success('Activity cleared.');
+								confirmingLog = false;
+							} else if (result.type === 'failure') {
+								toast.error(String(result.data?.error ?? 'Something went wrong.'));
+							}
+							await update();
+						};
+					}}
+				>
+					<p class="min-w-52 flex-1 font-semibold">
+						Clear all {data.logCount} activity entries? This can’t be undone.
+					</p>
+					<Button variant="ghost" onclick={() => (confirmingLog = false)}>Keep them</Button>
+					<Button type="submit" variant="destructive" disabled={busy}>Yes, clear</Button>
+				</form>
+			{/if}
+		</section>
 	</div>
 {/if}

@@ -557,3 +557,16 @@ export function deleteUpcomingByIp(ip: string): number {
 	}
 	return changes;
 }
+
+export function logCount(): number {
+	return (db.query('SELECT COUNT(*) AS n FROM log').get() as { n: number }).n;
+}
+
+/** Empties the post office's activity log, leaving one entry to say it was cleared. */
+export function clearLog(): number {
+	return db.transaction(() => {
+		const { changes } = db.query('DELETE FROM log').run();
+		log('Activity cleared', `${changes} entr${changes === 1 ? 'y' : 'ies'} removed (superadmin)`);
+		return changes;
+	})();
+}

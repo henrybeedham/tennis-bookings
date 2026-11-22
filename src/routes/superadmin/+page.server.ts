@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { LOCKED_MESSAGE, logIn, logOut, superadminEnabled } from '#lib/server/auth.js';
-import { bookingsByIp, deleteUpcomingByIp } from '#lib/server/bookings.js';
+import { bookingsByIp, clearLog, deleteUpcomingByIp, logCount } from '#lib/server/bookings.js';
 import { clientIp } from '#lib/server/ip.js';
 
 // Nothing links here. Without SUPERADMIN_PASSWORD the page doesn't exist at all.
@@ -12,7 +12,7 @@ function ensureEnabled() {
 export const load: PageServerLoad = ({ locals }) => {
 	ensureEnabled();
 	if (!locals.superadmin) return { superadmin: false as const };
-	return { superadmin: true as const, groups: bookingsByIp() };
+	return { superadmin: true as const, groups: bookingsByIp(), logCount: logCount() };
 };
 
 export const actions: Actions = {
@@ -42,5 +42,11 @@ export const actions: Actions = {
 		const ip = String((await request.formData()).get('ip') ?? '').trim();
 		if (!ip) return fail(400, { error: 'No address given.' });
 		return { deleted: deleteUpcomingByIp(ip) };
+	},
+
+	clearLog: async ({ locals }) => {
+		ensureEnabled();
+		if (!locals.superadmin) return fail(401, { error: 'Please log in again.' });
+		return { cleared: clearLog() };
 	}
 };
