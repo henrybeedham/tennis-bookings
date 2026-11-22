@@ -5,6 +5,7 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check-big';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import { toast } from 'svelte-sonner';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -35,6 +36,8 @@
 		openTime: number;
 		closeTime: number;
 		contact: string;
+		/** The person's own booking, to change instead of making a new one. */
+		editing?: Slot | null;
 	}
 
 	let {
@@ -48,7 +51,8 @@
 		slots,
 		openTime,
 		closeTime,
-		contact
+		contact,
+		editing = null
 	}: Props = $props();
 
 	let date = $state('');
@@ -66,11 +70,11 @@
 	$effect(() => {
 		if (!open) return;
 		untrack(() => {
-			date = initialDate;
-			start = initialStart;
-			duration = 60;
-			custom = false;
-			name = device.name;
+			date = editing?.date ?? initialDate;
+			start = editing?.start ?? initialStart;
+			duration = editing ? editing.end - editing.start : 60;
+			custom = !!editing && ![30, 60, 90, 120].includes(duration);
+			name = editing?.name ?? device.name;
 			phone = device.phone;
 			error = '';
 			booked = null;
@@ -80,7 +84,10 @@
 
 	// We only know about bookings on the days loaded. The server double-checks everything.
 	const known = $derived(isValidDate(date) && date >= from && date <= to);
-	const daySlots = $derived(known ? slots.filter((s) => s.date === date) : []);
+	// A booking being changed doesn't get in its own way.
+	const daySlots = $derived(
+		known ? slots.filter((s) => s.date === date && s.id !== editing?.id) : []
+	);
 	const overlaps = (s: number, e: number) => daySlots.find((x) => x.start < e && x.end > s);
 	const earliest = $derived(date === today ? Math.floor(nowMinutes / 30) * 30 : openTime);
 
@@ -154,27 +161,37 @@
 					<dd class="font-medium">{booked.name}</dd>
 				</dl>
 				<Dialog.Description>
-					Need to cancel? Tap your booking on the calendar and type in your phone number.
+					Need to change or cancel it? Tap your booking on the calendar and type in your phone
+					number.
 					{#if contact}<br />{contact}{/if}
 				</Dialog.Description>
 				<Button size="lg" class="w-full" onclick={() => (open = false)}>Done</Button>
 			</div>
 		{:else}
 			<Dialog.Header>
-				<Dialog.Title>Book the court</Dialog.Title>
-				<Dialog.Description>Choose a day and time, then tell us who you are.</Dialog.Description>
+				<Dialog.Title>{editing ? 'Change your booking' : 'Book the court'}</Dialog.Title>
+				<Dialog.Description>
+					{editing
+						? 'Choose a new day, time or name. Your booking stays the same until you save.'
+						: 'Choose a day and time, then tell us who you are.'}
+				</Dialog.Description>
 			</Dialog.Header>
 
 			<form
 				method="POST"
-				action={actionUrl('book', '/')}
+				action={actionUrl(editing ? 'change' : 'book', '/')}
 				class="flex flex-col gap-5"
 				use:enhance={() => {
 					busy = true;
 					error = '';
 					return async ({ result, update }) => {
 						busy = false;
-						if (result.type === 'success' && result.data?.booked) {
+						if (result.type === 'success' && result.data?.changed) {
+							device.remember(name.trim(), phone.trim());
+							open = false;
+							toast.success('Booking changed');
+							await update({ reset: false });
+						} else if (result.type === 'success' && result.data?.booked) {
 							const slot = result.data.booked as Slot;
 							booked = slot;
 							device.addMine(slot.ref);
@@ -188,6 +205,8 @@
 					};
 				}}
 			>
+				{#if editing}<input type="hidden" name="id" value={editing.id} />{/if}
+
 				<div class="flex flex-col gap-2">
 					<Label for="b-date">Day</Label>
 					<DatePicker
@@ -287,10 +306,12 @@
 				</div>
 
 				<div class="flex flex-col gap-2">
-					<Label for="b-phone">Your phone number</Label>
+					<Label for="b-phone">
+						{editing ? 'Phone number you booked with' : 'Your phone number'}
+					</Label>
 					<Input
 						id="b-phone"
-						name="phone"
+						name={editing ? 'owner-phone' : 'phone'}
 						type="tel"
 						inputmode="tel"
 						autocomplete="tel"
@@ -299,7 +320,9 @@
 						placeholder="e.g. 07700 900123"
 					/>
 					<p class="text-[0.95rem] leading-snug text-ink-soft">
-						You’ll need this number to cancel. Only the post office can see it.
+						{editing
+							? 'To check it’s your booking. It stays the number for the booking.'
+							: 'You’ll need this number to change or cancel. Only the post office can see it.'}
 					</p>
 				</div>
 
@@ -320,7 +343,7 @@
 					class="w-full"
 					disabled={busy || !!clash || past}
 				>
-					{busy ? 'Booking…' : 'Book the court'}
+					{busy ? 'Saving…' : editing ? 'Save changes' : 'Book the court'}
 				</Button>
 			</form>
 		{/if}

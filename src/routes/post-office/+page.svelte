@@ -43,6 +43,8 @@
 	let bookDate = $state<ISODate>('');
 	let bookStart = $state(0);
 	let bookWeekly = $state(false);
+	let editing = $state<AdminSlot | null>(null);
+	let editScope = $state<'once' | 'series'>('once');
 	let slotOpen = $state(false);
 	let selected = $state<AdminSlot | null>(null);
 	const TABS = ['calendar', 'find', 'regular', 'settings', 'activity'];
@@ -57,6 +59,7 @@
 	function book(date: ISODate, start?: number, weekly = false) {
 		if (!data.admin) return;
 		bookWeekly = weekly;
+		editing = null;
 		bookDate = date;
 		bookStart =
 			start ??
@@ -68,6 +71,13 @@
 				data.settings.open,
 				data.settings.close
 			);
+		bookOpen = true;
+	}
+
+	function edit(slot: AdminSlot, scope: 'once' | 'series') {
+		slotOpen = false;
+		editing = slot;
+		editScope = scope;
 		bookOpen = true;
 	}
 
@@ -471,6 +481,8 @@
 		openTime={data.settings.open}
 		closeTime={data.settings.close}
 		weekly={bookWeekly}
+		{editing}
+		scope={editScope}
 	/>
-	<AdminSlotDialog bind:open={slotOpen} slot={selected} />
+	<AdminSlotDialog bind:open={slotOpen} slot={selected} onedit={edit} />
 {/if}

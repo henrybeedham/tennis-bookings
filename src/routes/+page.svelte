@@ -28,6 +28,7 @@
 	let bookOpen = $state(false);
 	let bookDate = $state<ISODate>('');
 	let bookStart = $state(0);
+	let changing = $state<Slot | null>(null);
 
 	/** The day showing on the calendar, used by the Book buttons. */
 	let day = $state<ISODate>('');
@@ -37,10 +38,17 @@
 	let selected = $state<Slot | null>(null);
 
 	function book(date: ISODate, start?: number) {
+		changing = null;
 		date ||= data.focus;
 		bookDate = date < data.today ? data.today : date;
 		bookStart =
 			start ?? firstFreeStart(data.slots, bookDate, data.today, data.nowMinutes, s.open, s.close);
+		bookOpen = true;
+	}
+
+	function change(slot: Slot) {
+		slotOpen = false;
+		changing = slot;
 		bookOpen = true;
 	}
 
@@ -132,6 +140,7 @@
 	openTime={s.open}
 	closeTime={s.close}
 	contact={s.contact}
+	editing={changing}
 />
 
 <SlotDialog
@@ -140,6 +149,7 @@
 	today={data.today}
 	nowMinutes={data.nowMinutes}
 	contact={s.contact}
+	onchange={change}
 />
 
 <HelpDialog

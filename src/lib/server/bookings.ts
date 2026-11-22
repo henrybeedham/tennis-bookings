@@ -257,7 +257,8 @@ interface Validated {
 	kind: SlotKind;
 }
 
-function validate(input: BookingInput, admin: boolean): Validated {
+/** `keepPhone`: the phone number is the one already on the booking, so isn't checked again. */
+function validate(input: BookingInput, admin: boolean, keepPhone = false): Validated {
 	const settings = getSettings();
 	const now = nowUK();
 	const kind: SlotKind = admin && input.kind === 'block' ? 'block' : 'booking';
@@ -282,13 +283,13 @@ function validate(input: BookingInput, admin: boolean): Validated {
 	}
 
 	const phone = normalisePhone(input.phone);
-	if (!admin && !phone) {
+	if (keepPhone) {
+		// Nothing to check.
+	} else if (!admin && !phone) {
 		throw new BookingError('Please enter your phone number. You’ll need it if you want to cancel.');
-	}
-	if (!admin && phone && phone.length < MIN_PUBLIC_PHONE_DIGITS) {
+	} else if (!admin && phone && phone.length < MIN_PUBLIC_PHONE_DIGITS) {
 		throw new BookingError('Please enter your full phone number, including the area code.');
-	}
-	if (admin && cleanText(input.phone, 40) && !phone) {
+	} else if (admin && cleanText(input.phone, 40) && !phone) {
 		throw new BookingError('That phone number doesn’t look right.');
 	}
 
@@ -411,6 +412,136 @@ export function createSeries(input: SeriesInput): { skipped: ISODate[] } {
 	})();
 }
 
+function findSlot(id: string): AdminSlot | undefined {
+	if (id.startsWith('b')) {
+		const row = db.query('SELECT date FROM bookings WHERE id = ?').get(Number(id.slice(1))) as {
+			date: string;
+		} | null;
+		return row ? getAdminSlots(row.date, row.date).find((s) => s.id === id) : undefined;
+	}
+	const date = id.startsWith('s') ? id.split(':')[1] : null;
+	return date && isValidDate(date) ? getAdminSlots(date, date).find((s) => s.id === id) : undefined;
+}
+
+function clashMessage(clash: AdminSlot) {
+	return clash.kind === 'block'
+		? `The court is blocked out then (${clash.name}, ${formatRange(clash.start, clash.end)}).`
+		: `That clashes with ${clash.name}’s booking (${formatRange(clash.start, clash.end)}).`;
+}
+
+/**
+ * Changes a booking or block-out (post office only). A one-off is changed in place. For a week
+ * of a regular booking, `scope` says whether to change just that week (it becomes a one-off) or
+ * that week and every week after it (the day stays the same). Returns weeks skipped because
+ * something else was already booked then.
+ */
+export function editSlot(
+	id: string,
+	input: BookingInput,
+	scope: 'once' | 'series'
+): { skipped: ISODate[] } {
+	const slot = findSlot(id);
+	if (!slot) throw new BookingError('That booking no longer exists. It may have been cancelled.');
+	const kind = slot.kind;
+
+	if (slot.seriesId == null) {
+		const v = validate({ ...input, kind }, true);
+		return db.transaction(() => {
+			const clash = getAdminSlots(v.date, v.date).find(
+				(s) => s.id !== slot.id && s.start < v.end && s.end > v.start
+			);
+			if (clash) throw new BookingError(clashMessage(clash));
+			db.query(
+				'UPDATE bookings SET date = ?, start = ?, end = ?, name = ?, phone = ?, note = ? WHERE id = ?'
+			).run(v.date, v.start, v.end, v.name, v.phone, v.note, Number(slot.id.slice(1)));
+			log(
+				kind === 'block' ? 'Block-out changed' : 'Booking changed',
+				`${describe(slot)} → ${describe(v)} (post office)`
+			);
+			return { skipped: [] };
+		})();
+	}
+
+	const seriesId = slot.seriesId;
+	const row = db.query('SELECT * FROM series WHERE id = ?').get(seriesId) as SeriesRow | null;
+	if (!row) throw new BookingError('That regular booking no longer exists.');
+
+	if (scope === 'once') {
+		const v = validate({ ...input, kind }, true);
+		return db.transaction(() => {
+			// Take this week out of the regular booking, then add it back as a one-off.
+			db.query('INSERT OR IGNORE INTO series_skips (series_id, date) VALUES (?, ?)').run(
+				seriesId,
+				slot.date
+			);
+			const clash = findClash(v.date, v.start, v.end);
+			if (clash) throw new BookingError(clashMessage(clash));
+			db.query(
+				`INSERT INTO bookings (date, start, end, name, phone, note, kind, created_by)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, 'admin')`
+			).run(v.date, v.start, v.end, v.name, v.phone, v.note, kind);
+			log(
+				kind === 'block' ? 'Block-out changed (one week)' : 'Booking changed (one week)',
+				`${describe(slot)} → ${describe(v)}`
+			);
+			return { skipped: [] };
+		})();
+	}
+
+	// This week and after: the day of the week stays the same.
+	const from = slot.date;
+	const v = validate({ ...input, date: from, kind }, true);
+	return db.transaction(() => {
+		const oldSkips = new Set(
+			(
+				db
+					.query('SELECT date FROM series_skips WHERE series_id = ? AND date >= ?')
+					.all(seriesId, from) as { date: string }[]
+			).map((r) => r.date)
+		);
+		const lastDate = addDays(from, -1);
+		if (lastDate < row.start_date) db.query('DELETE FROM series WHERE id = ?').run(seriesId);
+		else db.query('UPDATE series SET end_date = ? WHERE id = ?').run(lastDate, seriesId);
+
+		const skipped: ISODate[] = [];
+		const skips: ISODate[] = [];
+		const horizon = row.end_date ?? addDays(from, SERIES_HORIZON_DAYS);
+		for (let d = from; d <= horizon; d = addDays(d, 7)) {
+			// Weeks that were cancelled stay cancelled.
+			if (oldSkips.has(d)) {
+				skips.push(d);
+				continue;
+			}
+			const clash = findClash(d, v.start, v.end);
+			if (!clash) continue;
+			if (clash.recurring) {
+				throw new BookingError(
+					`That clashes with ${clash.name}’s regular booking (${DAY_NAMES[weekday(d)]}s ${formatRange(clash.start, clash.end)}).`
+				);
+			}
+			skipped.push(d);
+			skips.push(d);
+		}
+
+		const created = db
+			.query(
+				`INSERT INTO series (weekday, start, end, start_date, end_date, name, phone, note, kind)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+			)
+			.get(row.weekday, v.start, v.end, from, row.end_date, v.name, v.phone, v.note, kind) as {
+			id: number;
+		};
+		const skip = db.query('INSERT INTO series_skips (series_id, date) VALUES (?, ?)');
+		for (const d of skips) skip.run(created.id, d);
+
+		log(
+			kind === 'block' ? 'Regular block-out changed' : 'Regular booking changed',
+			`${row.name} · every ${DAY_NAMES[row.weekday]} ${formatRange(row.start, row.end)} → ${v.name} · ${formatRange(v.start, v.end)}, from ${formatShort(from)}`
+		);
+		return { skipped };
+	})();
+}
+
 /** Stops a regular booking so its last week is `lastDate` (or removes it entirely if that's before it starts). */
 export function endSeries(id: number, fromDate: ISODate) {
 	const row = db.query('SELECT * FROM series WHERE id = ?').get(id) as SeriesRow | null;
@@ -427,41 +558,77 @@ export function endSeries(id: number, fromDate: ISODate) {
 	);
 }
 
+/** Members of the public prove a booking is theirs with the phone number it was made with. */
+function checkOwner(slot: AdminSlot, rawPhone: unknown, doing: 'cancel' | 'change') {
+	if (slot.kind === 'block') throw new BookingError('Only the post office can change this.');
+	if (!slot.phone) {
+		throw new BookingError(
+			`This booking was made at the post office. Please ask them to ${doing} it.`
+		);
+	}
+	const now = nowUK();
+	if (slot.date < now.date || (slot.date === now.date && slot.end <= now.minutes)) {
+		throw new BookingError('This booking has already finished.');
+	}
+	const phone = normalisePhone(rawPhone);
+	if (!phone || phone !== slot.phone) {
+		throw new WrongPhoneError('That phone number doesn’t match the one used to make this booking.');
+	}
+}
+
+/**
+ * Lets the person who made a booking change its day, time or name. They prove it's theirs with
+ * the phone number they booked with, which stays the same. Regular bookings are changed by the
+ * post office.
+ */
+export function changeOwnBooking(id: string, input: BookingInput, rawPhone: unknown): AdminSlot {
+	const slot = findSlot(id);
+	if (!slot) throw new BookingError('That booking has been cancelled.');
+	checkOwner(slot, rawPhone, 'change');
+	if (slot.recurring) {
+		throw new BookingError('This is a regular booking. Please ask the post office to change it.');
+	}
+	const now = nowUK();
+	if (slot.date < now.date || (slot.date === now.date && slot.start <= now.minutes)) {
+		throw new BookingError('This booking has already started, so it can’t be changed.');
+	}
+	const v = validate(
+		{ ...input, phone: slot.phone, note: slot.note, kind: 'booking' },
+		false,
+		true
+	);
+	return db.transaction(() => {
+		const clash = getAdminSlots(v.date, v.date).find(
+			(s) => s.id !== slot.id && s.start < v.end && s.end > v.start
+		);
+		if (clash) {
+			throw new BookingError(
+				clash.kind === 'block'
+					? `Sorry, the court isn’t available then (${clash.name}, ${formatRange(clash.start, clash.end)}).`
+					: `Sorry, that clashes with another booking (${formatRange(clash.start, clash.end)}). Please choose another time.`
+			);
+		}
+		db.query('UPDATE bookings SET date = ?, start = ?, end = ?, name = ? WHERE id = ?').run(
+			v.date,
+			v.start,
+			v.end,
+			v.name,
+			Number(slot.id.slice(1))
+		);
+		log('Booking changed', `${describe(slot)} → ${describe(v)} (online)`);
+		return findSlot(slot.id)!;
+	})();
+}
+
 /**
  * Cancels one slot. Members of the public must give the phone number the
  * booking was made with; the post office can cancel anything.
  */
 export function cancelSlot(id: string, opts: { admin: boolean; phone?: unknown }): AdminSlot {
-	const date = id.startsWith('s') ? id.split(':')[1] : null;
-	let slot: AdminSlot | undefined;
-	if (id.startsWith('b')) {
-		const row = db.query('SELECT date FROM bookings WHERE id = ?').get(Number(id.slice(1))) as {
-			date: string;
-		} | null;
-		if (row) slot = getAdminSlots(row.date, row.date).find((s) => s.id === id);
-	} else if (date && isValidDate(date)) {
-		slot = getAdminSlots(date, date).find((s) => s.id === id);
-	}
+	const slot = findSlot(id);
 	if (!slot) throw new BookingError('That booking has already been cancelled.');
 
-	if (!opts.admin) {
-		if (slot.kind === 'block') throw new BookingError('Only the post office can change this.');
-		if (!slot.phone) {
-			throw new BookingError(
-				'This booking was made at the post office. Please ask them to cancel it.'
-			);
-		}
-		const now = nowUK();
-		if (slot.date < now.date || (slot.date === now.date && slot.end <= now.minutes)) {
-			throw new BookingError('This booking has already finished.');
-		}
-		const phone = normalisePhone(opts.phone);
-		if (!phone || phone !== slot.phone) {
-			throw new WrongPhoneError(
-				'That phone number doesn’t match the one used to make this booking.'
-			);
-		}
-	}
+	if (!opts.admin) checkOwner(slot, opts.phone, 'cancel');
 
 	if (slot.seriesId != null) {
 		db.query('INSERT OR IGNORE INTO series_skips (series_id, date) VALUES (?, ?)').run(

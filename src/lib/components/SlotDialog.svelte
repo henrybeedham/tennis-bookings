@@ -19,13 +19,16 @@
 		slot,
 		today,
 		nowMinutes,
-		contact
+		contact,
+		onchange
 	}: {
 		open: boolean;
 		slot: Slot | null;
 		today: ISODate;
 		nowMinutes: number;
 		contact: string;
+		/** Opens the booking form to change this booking. */
+		onchange: (slot: Slot) => void;
 	} = $props();
 
 	let step = $state<'view' | 'confirm'>('view');
@@ -98,6 +101,11 @@
 						This booking is happening now. If you’ve finished early, you can cancel it to free up
 						the court.
 					</Dialog.Description>
+				{/if}
+				{#if !started && !slot.recurring}
+					<Button variant="outline" size="lg" class="w-full" onclick={() => onchange(slot!)}>
+						Change this booking
+					</Button>
 				{/if}
 				<Button variant="outline" size="lg" class="w-full" onclick={() => (step = 'confirm')}>
 					Cancel this booking

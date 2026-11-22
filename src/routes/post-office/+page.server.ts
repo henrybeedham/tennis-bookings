@@ -5,6 +5,7 @@ import {
 	cancelSlot,
 	createBooking,
 	createSeries,
+	editSlot,
 	endSeries,
 	getAdminSlots,
 	getSettings,
@@ -82,6 +83,12 @@ export const actions: Actions = {
 		}
 		createBooking(input, true);
 		return { ok: true, skipped: [] as string[] };
+	}),
+
+	edit: guarded((data) => {
+		const scope = data.get('scope') === 'series' ? 'series' : 'once';
+		const { skipped } = editSlot(String(data.get('id')), readBookingForm(data), scope);
+		return { ok: true, skipped };
 	}),
 
 	cancel: guarded((data) => {

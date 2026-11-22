@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { actionUrl } from '#lib/action.js';
 	import { toast } from 'svelte-sonner';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import Phone from '@lucide/svelte/icons/phone';
 	import Repeat from '@lucide/svelte/icons/repeat-2';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -11,9 +12,19 @@
 	import { DAY_NAMES, formatLong, formatRange, weekday } from '#lib/dates.js';
 	import type { AdminSlot } from '#lib/types.js';
 
-	let { open = $bindable(), slot }: { open: boolean; slot: AdminSlot | null } = $props();
-
 	type Scope = 'once' | 'series';
+
+	let {
+		open = $bindable(),
+		slot,
+		onedit
+	}: {
+		open: boolean;
+		slot: AdminSlot | null;
+		/** Opens the form to change this slot. */
+		onedit: (slot: AdminSlot, scope: Scope) => void;
+	} = $props();
+
 	let confirming = $state<Scope | null>(null);
 	let error = $state('');
 	let busy = $state(false);
@@ -126,6 +137,20 @@
 				</form>
 			{:else}
 				<div class="flex flex-col gap-3">
+					{#if slot.recurring}
+						<div class="grid gap-3 sm:grid-cols-2">
+							<Button variant="outline" size="lg" onclick={() => onedit(slot!, 'once')}>
+								<Pencil />Change this week
+							</Button>
+							<Button variant="outline" size="lg" onclick={() => onedit(slot!, 'series')}>
+								<Pencil />Change from this week on
+							</Button>
+						</div>
+					{:else}
+						<Button variant="outline" size="lg" onclick={() => onedit(slot!, 'once')}>
+							<Pencil />Change details
+						</Button>
+					{/if}
 					{#if slot.recurring}
 						<Button variant="outline" size="lg" onclick={() => (confirming = 'once')}>
 							Cancel just this week

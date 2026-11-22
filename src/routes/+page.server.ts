@@ -4,6 +4,7 @@ import {
 	BookingError,
 	WrongPhoneError,
 	cancelSlot,
+	changeOwnBooking,
 	createBooking,
 	getPublicSlots,
 	getSettings,
@@ -13,7 +14,7 @@ import { readBookingForm, rangeFromUrl } from '#lib/server/forms.js';
 import { clientIp } from '#lib/server/ip.js';
 import { limiter } from '#lib/server/ratelimit.js';
 
-// Wrong phone numbers when cancelling: 10 per address every 15 minutes, and 20 per
+// Wrong phone numbers when cancelling or changing a booking: 10 per address every 15 minutes, and 20 per
 // booking a day, so nobody can work through numbers to cancel someone else's booking.
 const wrongPhoneByIp = limiter(10, 15 * 60 * 1000);
 const wrongPhoneByBooking = limiter(20, 24 * 60 * 60 * 1000);
@@ -48,25 +49,38 @@ export const actions: Actions = {
 		}
 	},
 
-	cancel: async (event) => {
-		const data = await event.request.formData();
-		const id = String(data.get('id'));
-		const ip = clientIp(event);
-		if (wrongPhoneByIp.blocked(ip) || wrongPhoneByBooking.blocked(id)) {
-			return fail(429, {
-				error: 'Too many wrong phone numbers. Please try again later, or ask the post office.'
-			});
-		}
-		try {
-			const slot = cancelSlot(id, { admin: false, phone: data.get('phone') });
-			return { cancelled: toPublic(slot) };
-		} catch (e) {
-			if (e instanceof WrongPhoneError) {
-				wrongPhoneByIp.hit(ip);
-				wrongPhoneByBooking.hit(id);
-			}
-			if (e instanceof BookingError) return fail(400, { error: e.message });
-			throw e;
-		}
-	}
+	cancel: (event) =>
+		asOwner(event, (id, data) => ({
+			cancelled: toPublic(cancelSlot(id, { admin: false, phone: data.get('phone') }))
+		})),
+
+	change: (event) =>
+		asOwner(event, (id, data) => ({
+			changed: toPublic(changeOwnBooking(id, readBookingForm(data), data.get('owner-phone')))
+		}))
 };
+
+/** Runs something that needs the booking's phone number, counting wrong guesses. */
+async function asOwner<T>(
+	event: Parameters<Actions[string]>[0],
+	fn: (id: string, data: FormData) => T
+) {
+	const data = await event.request.formData();
+	const id = String(data.get('id'));
+	const ip = clientIp(event);
+	if (wrongPhoneByIp.blocked(ip) || wrongPhoneByBooking.blocked(id)) {
+		return fail(429, {
+			error: 'Too many wrong phone numbers. Please try again later, or ask the post office.'
+		});
+	}
+	try {
+		return fn(id, data);
+	} catch (e) {
+		if (e instanceof WrongPhoneError) {
+			wrongPhoneByIp.hit(ip);
+			wrongPhoneByBooking.hit(id);
+		}
+		if (e instanceof BookingError) return fail(400, { error: e.message });
+		throw e;
+	}
+}

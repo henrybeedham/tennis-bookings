@@ -21,6 +21,7 @@
 		weekday,
 		type ISODate
 	} from '#lib/dates.js';
+	import type { AdminSlot } from '#lib/types.js';
 
 	interface Props {
 		open: boolean;
@@ -30,6 +31,10 @@
 		closeTime: number;
 		/** Start on "Every week" instead of "Once". */
 		weekly?: boolean;
+		/** Change this booking instead of adding a new one. */
+		editing?: AdminSlot | null;
+		/** For a week of a regular booking: change just that week, or that week and after. */
+		scope?: 'once' | 'series';
 	}
 
 	let {
@@ -38,7 +43,9 @@
 		start: initialStart,
 		openTime,
 		closeTime,
-		weekly = false
+		weekly = false,
+		editing = null,
+		scope = 'once'
 	}: Props = $props();
 
 	let kind = $state<'booking' | 'block'>('booking');
@@ -56,13 +63,25 @@
 	$effect(() => {
 		if (!open) return;
 		untrack(() => {
+			until = '';
+			error = '';
+			if (editing) {
+				kind = editing.kind;
+				repeat = 'once';
+				date = editing.date;
+				start = editing.start;
+				end = editing.end;
+				name = editing.name;
+				phone = editing.phone ?? '';
+				note = editing.note ?? '';
+				return;
+			}
 			kind = 'booking';
 			repeat = weekly ? 'weekly' : 'once';
 			date = initialDate;
 			start = initialStart;
 			end = Math.min(initialStart + 60, closeTime);
-			until = '';
-			name = phone = note = error = '';
+			name = phone = note = '';
 		});
 	});
 
@@ -77,22 +96,37 @@
 	$effect(() => {
 		if (end <= start) end = Math.min(start + 60, closeTime);
 	});
+
+	/** Changing every week from this one on, so the day can't move. */
+	const wholeSeries = $derived(!!editing?.recurring && scope === 'series');
+	const title = $derived.by(() => {
+		if (!editing) return kind === 'block' ? 'Block out the court' : 'New booking';
+		const thing = kind === 'block' ? 'block-out' : 'booking';
+		if (!editing.recurring) return `Change ${thing}`;
+		return wholeSeries
+			? `Change regular ${thing}`
+			: `Change ${thing} on ${formatShort(editing.date)} only`;
+	});
+	const description = $derived.by(() => {
+		if (wholeSeries && editing)
+			return `Changes every ${DAY_NAMES[weekday(editing.date)]} from ${formatLong(editing.date)} onwards. Earlier weeks stay as they were.`;
+		if (editing?.recurring) return 'Other weeks stay as they are.';
+		return kind === 'block'
+			? 'Nobody will be able to book while the court is blocked out.'
+			: 'Phone number is optional. Without one, only the post office can cancel it.';
+	});
 </script>
 
 <Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-xl">
 		<Dialog.Header>
-			<Dialog.Title>{kind === 'block' ? 'Block out the court' : 'New booking'}</Dialog.Title>
-			<Dialog.Description>
-				{kind === 'block'
-					? 'Nobody will be able to book while the court is blocked out.'
-					: 'Phone number is optional. Without one, only the post office can cancel it.'}
-			</Dialog.Description>
+			<Dialog.Title>{title}</Dialog.Title>
+			<Dialog.Description>{description}</Dialog.Description>
 		</Dialog.Header>
 
 		<form
 			method="POST"
-			action={actionUrl('book')}
+			action={actionUrl(editing ? 'edit' : 'book')}
 			class="flex flex-col gap-5"
 			use:enhance={() => {
 				busy = true;
@@ -102,12 +136,15 @@
 					if (result.type === 'success') {
 						open = false;
 						const skipped = (result.data?.skipped ?? []) as string[];
-						toast.success(kind === 'block' ? 'Court blocked out' : 'Booking added', {
-							description: skipped.length
-								? `Skipped ${skipped.map(formatShort).join(', ')}: already booked.`
-								: undefined,
-							duration: skipped.length ? 12000 : 4000
-						});
+						toast.success(
+							editing ? 'Changes saved' : kind === 'block' ? 'Court blocked out' : 'Booking added',
+							{
+								description: skipped.length
+									? `Skipped ${skipped.map(formatShort).join(', ')}: already booked.`
+									: undefined,
+								duration: skipped.length ? 12000 : 4000
+							}
+						);
 						await update();
 					} else if (result.type === 'failure') {
 						error = String(result.data?.error ?? 'Something went wrong.');
@@ -117,24 +154,37 @@
 				};
 			}}
 		>
+			{#if editing}
+				<input type="hidden" name="id" value={editing.id} />
+				<input type="hidden" name="scope" value={scope} />
+			{/if}
 			<input type="hidden" name="kind" value={kind} />
 			<input type="hidden" name="repeat" value={repeat} />
 			<input type="hidden" name="start" value={formatTime(start)} />
 			<input type="hidden" name="end" value={formatTime(end)} />
 
-			<Segmented
-				label="Type"
-				bind:value={kind}
-				options={[
-					{ value: 'booking', label: 'Booking' },
-					{ value: 'block', label: 'Block out court' }
-				]}
-			/>
+			{#if !editing}
+				<Segmented
+					label="Type"
+					bind:value={kind}
+					options={[
+						{ value: 'booking', label: 'Booking' },
+						{ value: 'block', label: 'Block out court' }
+					]}
+				/>
+			{/if}
 
-			<div class="flex flex-col gap-2">
-				<Label for="a-date">{repeat === 'weekly' ? 'First week' : 'Day'}</Label>
-				<DatePicker id="a-date" name="date" bind:value={date} required />
-			</div>
+			{#if wholeSeries}
+				<input type="hidden" name="date" value={date} />
+				<p class="rounded-2xl bg-raised/60 p-4 text-base font-semibold">
+					Every {DAY_NAMES[weekday(date)]}
+				</p>
+			{:else}
+				<div class="flex flex-col gap-2">
+					<Label for="a-date">{repeat === 'weekly' ? 'First week' : 'Day'}</Label>
+					<DatePicker id="a-date" name="date" bind:value={date} required />
+				</div>
+			{/if}
 
 			<div class="grid grid-cols-2 gap-3">
 				<div class="flex flex-col gap-2">
@@ -147,17 +197,19 @@
 				</div>
 			</div>
 
-			<Segmented
-				label="Repeat"
-				bind:value={repeat}
-				options={[
-					{ value: 'once', label: 'Just once' },
-					{
-						value: 'weekly',
-						label: isValidDate(date) ? `Every ${DAY_NAMES[weekday(date)]}` : 'Every week'
-					}
-				]}
-			/>
+			{#if !editing}
+				<Segmented
+					label="Repeat"
+					bind:value={repeat}
+					options={[
+						{ value: 'once', label: 'Just once' },
+						{
+							value: 'weekly',
+							label: isValidDate(date) ? `Every ${DAY_NAMES[weekday(date)]}` : 'Every week'
+						}
+					]}
+				/>
+			{/if}
 
 			{#if repeat === 'weekly'}
 				<div class="flex flex-col gap-2 rounded-2xl bg-raised/60 p-4">
@@ -221,7 +273,13 @@
 			<Dialog.Footer>
 				<Button variant="outline" size="lg" onclick={() => (open = false)}>Cancel</Button>
 				<Button type="submit" size="lg" disabled={busy}>
-					{busy ? 'Saving…' : kind === 'block' ? 'Block out' : 'Add booking'}
+					{busy
+						? 'Saving…'
+						: editing
+							? 'Save changes'
+							: kind === 'block'
+								? 'Block out'
+								: 'Add booking'}
 				</Button>
 			</Dialog.Footer>
 		</form>
