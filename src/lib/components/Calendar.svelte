@@ -111,7 +111,7 @@
 
 <div
 	class={[
-		'panel overflow-clip rounded-3xl [--gutter:2.75rem] md:[--gutter:4rem]',
+		'panel overflow-clip rounded-3xl [--gutter:2.25rem] md:[--gutter:4rem]',
 		fit && 'md:flex md:min-h-0 md:flex-1 md:flex-col'
 	]}
 	style="--hour: 4.25rem; --min-hour: 2.2rem; --hours: {hours.length};"
@@ -182,14 +182,22 @@
 								'absolute -top-[0.7em] right-1.5 text-[0.6875rem] font-medium text-ink-soft tabular-nums md:right-3 md:text-xs'
 							]}
 						>
-							{formatTime(h)}
+							<!-- Phones: just the hour, to leave more room for the days. -->
+							<span class="md:hidden">{formatTime(h).slice(0, 2)}</span>
+							<span class="max-md:hidden">{formatTime(h)}</span>
 						</span>
 					</div>
 				{/each}
 			</div>
 
 			{#each days as d (d)}
-				<div class="relative flex min-w-0 flex-1 flex-col border-l border-grid {columnClass(d)}">
+				<div
+					class={[
+						'relative flex min-w-0 flex-1 flex-col border-l border-grid',
+						d === today && view === 'week' && 'bg-ball/[0.07]',
+						columnClass(d)
+					]}
+				>
 					{#each halves as m (m)}
 						{@const past = isPast(d, m)}
 						{@const available = isOpen(m)}
@@ -224,7 +232,9 @@
 						<button
 							type="button"
 							class={[
-								'slot absolute inset-x-1 z-10 flex min-w-0 flex-col overflow-hidden rounded-lg px-1 text-left md:rounded-xl md:px-2.5',
+								'slot absolute inset-x-0.5 z-10 flex min-w-0 flex-col overflow-hidden rounded-md text-left md:inset-x-1 md:rounded-xl md:px-2.5',
+								// A week on a phone has very narrow columns, so keep the padding tight.
+								view === 'week' ? 'max-md:px-[3px]' : 'max-md:px-2',
 								'transition-[filter] hover:brightness-[0.97] dark:hover:brightness-125',
 								short ? 'justify-center py-0' : 'py-1.5',
 								slotTone(s),
@@ -257,7 +267,7 @@
 									class="slot-full flex min-w-0 items-center gap-1.5 text-sm leading-snug font-semibold"
 								>
 									{#if s.kind === 'block'}<Lock class="size-3.5 shrink-0" />{/if}
-									<span class="truncate">{s.name}</span>
+									<span class="slot-name truncate">{s.name}</span>
 									{#if s.recurring && s.kind !== 'block'}<Repeat
 											class="size-3.5 shrink-0 opacity-60"
 										/>{/if}
@@ -314,12 +324,24 @@
 	}
 	/* Narrow columns (a week on a phone): just the name, smaller. Tap for the details. */
 	@container (max-width: 5.5rem) {
+		/* Let the name wrap onto as many lines as the booking has room for. */
+		.slot-name {
+			white-space: normal;
+			/* Long names break with a hyphen ("Mar-garet") rather than being cut off. */
+			hyphens: auto;
+			overflow-wrap: anywhere;
+			line-height: 1.2;
+		}
+		.slot-full {
+			align-items: flex-start;
+		}
 		.slot-time,
 		.slot :global(svg) {
 			display: none !important;
 		}
 		.slot > span {
-			font-size: 0.6875rem;
+			font-size: 0.65rem;
+			letter-spacing: -0.01em;
 		}
 	}
 </style>
