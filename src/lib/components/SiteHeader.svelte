@@ -15,12 +15,16 @@
 -->
 <header class="sticky top-0 z-40 h-(--nav-offset) bg-page/95 px-4 pt-3 backdrop-blur-xl">
 	<nav
-		class="glass mx-auto flex h-14 w-full max-w-3xl items-center gap-3 rounded-full pr-2 pl-2.5"
+		class="glass mx-auto flex h-14 w-full max-w-3xl items-center gap-1 rounded-full pr-2 pl-2 sm:gap-3 sm:pl-2.5"
 		aria-label="Site"
 	>
 		<a {href} class="flex min-w-0 flex-1 items-center gap-2.5 rounded-full">
 			<img src={favicon} alt="" class="size-9 shrink-0 rounded-full" />
-			<span class="truncate text-[0.9375rem] font-semibold tracking-[-0.02em]">{title}</span>
+			<span
+				class="truncate text-[0.9375rem] font-semibold tracking-[-0.02em] max-[22.5rem]:sr-only"
+			>
+				{title}
+			</span>
 		</a>
 		{@render children?.()}
 	</nav>

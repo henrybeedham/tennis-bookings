@@ -1,11 +1,13 @@
 <script lang="ts">
 	import CalendarPlus from '@lucide/svelte/icons/calendar-plus';
+	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import SiteHeader from '#lib/components/SiteHeader.svelte';
 	import Notice from '#lib/components/Notice.svelte';
 	import Planner from '#lib/components/Planner.svelte';
 	import BookingDialog from '#lib/components/BookingDialog.svelte';
 	import SlotDialog from '#lib/components/SlotDialog.svelte';
+	import HelpDialog from '#lib/components/HelpDialog.svelte';
 	import { device } from '#lib/device.svelte.js';
 	import { firstFreeStart } from '#lib/slots.js';
 	import type { ISODate } from '#lib/dates.js';
@@ -22,6 +24,7 @@
 	/** The day showing on the calendar, used by the Book buttons. */
 	let day = $state<ISODate>('');
 
+	let helpOpen = $state(false);
 	let slotOpen = $state(false);
 	let selected = $state<Slot | null>(null);
 
@@ -45,6 +48,15 @@
 </svelte:head>
 
 <SiteHeader title={s.title}>
+	<Button
+		variant="ghost"
+		size="sm"
+		class="h-10 px-3 text-ink max-sm:px-2.5"
+		onclick={() => (helpOpen = true)}
+	>
+		<CircleHelp class="max-sm:hidden" />
+		Help
+	</Button>
 	<Button variant="ball" size="sm" class="h-10 px-4" onclick={() => book(day)}>
 		<CalendarPlus />
 		<span>Book<span class="max-sm:hidden">&nbsp;the court</span></span>
@@ -67,39 +79,6 @@
 		onopen={show}
 		ondaychange={(d) => (day = d)}
 	/>
-
-	<footer class="grid gap-8 border-t border-line px-1 pt-8 text-[0.9375rem] sm:grid-cols-3">
-		<div>
-			<h2 class="text-sm font-semibold">How to book</h2>
-			<ol class="mt-3 flex flex-col gap-2 text-ink-soft">
-				{#each ['Tap a free time on the calendar, or “Book the court”.', 'Choose how long, then enter your name and phone number.', 'The time is yours. Get the key as usual.'] as step, i (i)}
-					<li class="flex gap-3">
-						<span class="w-4 shrink-0 font-medium text-ink tabular-nums">{i + 1}</span>
-						<span>{step}</span>
-					</li>
-				{/each}
-			</ol>
-		</div>
-		<div>
-			<h2 class="text-sm font-semibold">Cancelling</h2>
-			<p class="mt-3 text-ink-soft">
-				Tap your booking on the calendar and type in the phone number you booked with.
-			</p>
-		</div>
-		<div>
-			<h2 class="text-sm font-semibold">Need help?</h2>
-			<p class="mt-3 text-ink-soft">
-				{s.contact ||
-					'Can’t use the website? Pop into the post office and they’ll book the court for you.'}
-			</p>
-			<a
-				href="/post-office"
-				class="mt-4 inline-block text-sm text-ink-soft underline decoration-line underline-offset-4 hover:text-ink"
-			>
-				Post office login
-			</a>
-		</div>
-	</footer>
 </div>
 
 <BookingDialog
@@ -121,4 +100,13 @@
 	today={data.today}
 	nowMinutes={data.nowMinutes}
 	contact={s.contact}
+/>
+
+<HelpDialog
+	bind:open={helpOpen}
+	contact={s.contact}
+	onbook={() => {
+		helpOpen = false;
+		book(day);
+	}}
 />
