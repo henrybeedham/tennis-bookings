@@ -83,6 +83,10 @@ submissions are forbidden”, and login cookies may not be marked secure.
 | `ORIGIN`              | `SERVICE_URL_APP`, else `https://` + `SERVICE_FQDN_APP` | Public URL. Set it by hand to override Coolify's                        |
 | `PORT`                | `3000`                                                  |                                                                         |
 
+**Link previews:** sharing the link in iMessage, WhatsApp and so on shows `static/og.jpg`. Its
+design is `assets/og/og-image.html`; after changing it, run `assets/og/render.sh` and bump `?v=` in
+`src/routes/+page.svelte` so apps fetch the new one.
+
 **Backups:** copy `/data/tennis.db` (plus `tennis.db-wal` if present), or use Coolify's volume backups.
 
 ## Tech

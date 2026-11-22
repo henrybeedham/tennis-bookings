@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import CalendarPlus from '@lucide/svelte/icons/calendar-plus';
 	import CircleHelp from '@lucide/svelte/icons/circle-help';
 	import Settings from '@lucide/svelte/icons/settings-2';
@@ -17,6 +18,12 @@
 
 	let { data }: PageProps = $props();
 	const s = $derived(data.settings);
+
+	// For the preview card in iMessage, WhatsApp and so on. Links in it must be full addresses.
+	const DESCRIPTION =
+		'Tap a free time, add your name and number, and it’s booked. No account needed.';
+	// Bump ?v= when the image changes: WhatsApp and iMessage keep old previews for a long time.
+	const ogImage = $derived(`${page.url.origin}/og.jpg?v=1`);
 
 	let bookOpen = $state(false);
 	let bookDate = $state<ISODate>('');
@@ -45,7 +52,20 @@
 
 <svelte:head>
 	<title>{s.title} · Book the court</title>
-	<meta name="description" content="Book the {s.title}. Tap a free time on the calendar." />
+	<meta name="description" content={DESCRIPTION} />
+	<link rel="canonical" href="{page.url.origin}/" />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content={s.title} />
+	<meta property="og:title" content="{s.title} · Book the court" />
+	<meta property="og:description" content={DESCRIPTION} />
+	<meta property="og:url" content="{page.url.origin}/" />
+	<meta property="og:locale" content="en_GB" />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:image:type" content="image/jpeg" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="A tennis ball on a court: Book the tennis court" />
+	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <SiteHeader title={s.title}>

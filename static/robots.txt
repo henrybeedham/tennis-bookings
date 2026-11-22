@@ -1,3 +1,22 @@
 # Bookings show people's names, so keep the whole site out of search engines.
 User-agent: *
 Disallow: /
+
+# Apps that build link previews (Facebook, Messenger, Slack, Discord, Telegram, X…) may read
+# the front page and its preview image, so a shared link shows a card. They don't index.
+User-agent: facebookexternalhit
+User-agent: Facebot
+User-agent: meta-externalagent
+User-agent: WhatsApp
+User-agent: Twitterbot
+User-agent: Slackbot
+User-agent: Slackbot-LinkExpanding
+User-agent: Discordbot
+User-agent: TelegramBot
+User-agent: LinkedInBot
+User-agent: SkypeUriPreview
+Allow: /$
+Allow: /?
+Allow: /og.jpg
+Allow: /apple-touch-icon.png
+Disallow: /
