@@ -1,0 +1,15 @@
+# Used by Coolify (or `docker compose up`) to run the booking site.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      # The password for the /post-office page. Change this!
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+    ports:
+      - '3000'
+    volumes:
+      - tennis-data:/data
+
+volumes:
+  tennis-data:
