@@ -54,11 +54,11 @@
 			variant="ghost"
 			size="sm"
 			class="h-10 px-3 text-ink max-sm:px-2.5"
-			href="/post-office?tab=settings"
-			aria-label="Post office settings"
+			href="/post-office"
+			aria-label="Post office"
 		>
 			<Settings />
-			<span class="max-sm:hidden">Settings</span>
+			<span class="max-sm:hidden">Admin</span>
 		</Button>
 	{/if}
 	<Button
